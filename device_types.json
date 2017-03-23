@@ -1,0 +1,4 @@
+{ "DEVICE_TYPES": [ {"id": 1, "name": "Adjustable Light", "properties": [1, 2]},
+					{"id": 2, "name": "Temperature Sensor", "properties": [3]}
+					]
+}

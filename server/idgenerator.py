@@ -6,7 +6,8 @@ class IDGenerator:
         self.server = server
 
     def current_device_id(self):
-        return max(self.server.devices.keys())
+        keys = self.server.devices.devices.keys()
+        return max(keys) if keys else 0
 
     def new_device_id(self):
         return self.current_device_id()+1

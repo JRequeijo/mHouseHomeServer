@@ -1,0 +1,14 @@
+{ 
+  "SCALAR_TYPES": [
+						 {"id": 1, "name": "Percentage", "unit": "%", "min_value": 0, "max_value": 100, "step": 1,"default_value": 0},
+						 {"id": 2, "name": "Power", "unit": "Watt", "min_value": 0, "max_value": 1000, "step": 10,"default_value": 0}
+						],
+  "ENUM_TYPES": [
+  						 {"id": 1, "name": "On-Off", "enum": {"off": 0, "on": 1}, "default_value": "off"},
+  						 {"id": 2, "name": "Air Conditioning Commands", "enum": {"off": 0, "heating": 1, "cooling": 2}, "default_value": "off"}
+  					  ],
+  "ARRAY_TYPES": [
+  						 {"id": 1, "name": "Company Name", "max_len": 10, "default_value": null},
+  						 {"id": 2, "name": "IEEE Float", "max_len": 8, "default_value": null}
+  					   ] 
+}

@@ -14,6 +14,9 @@ class HomeServerInfo(Resource):
                                             observable=True, allow_children=False)
 
         self.server = server
+        self.root_uri = "/info"
+
+        self.server.add_resource(self.root_uri, self)
 
         self.res_content_type = "application/json"
         self.payload = self.get_payload()

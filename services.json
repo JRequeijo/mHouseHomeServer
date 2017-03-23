@@ -1,0 +1,7 @@
+{ "SERVICES": [ {"id": 1, "name": "Heating"},
+				{"id": 2, "name": "Lighting"},
+				{"id": 3, "name": "Security"},
+				{"id": 4, "name": "Appliances"},
+				{"id": 5, "name": "Irrigation"}
+				]
+}

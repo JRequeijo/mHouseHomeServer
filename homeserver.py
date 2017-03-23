@@ -4,7 +4,7 @@ from coapthon.server.coap import CoAP
 
 from server.idgenerator import IDGenerator
 from server.homeserverinfo import HomeServerInfo
-# from server.devices import DevicesList
+from server.devices import DevicesList
 
 class HomeServer(CoAP):
     def __init__(self, server_id, name, address, areas=[]):
@@ -22,10 +22,9 @@ class HomeServer(CoAP):
 
         CoAP.__init__(self, (self.coapaddress, self.port), self.multicast)
 
-        self.add_resource('info/', HomeServerInfo(self))
+        self.info = HomeServerInfo(self)
 
-        # self.devices = DevicesList(self)
-        self.devices = {}
+        self.devices = DevicesList(self)
         self.id_gen = IDGenerator(self)
 
         print "CoAP Server start on " + self.address + ":" + str(self.port)

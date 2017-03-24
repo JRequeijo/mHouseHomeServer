@@ -125,16 +125,16 @@ def get_all_devices():
 
 
 # ###### Single Device Endpoints########
-# @proxy.get("/devices/<device_id:int>")
-# def get_device(device_id):
-#     resp = comm.get("/devices/"+str(device_id))
-#     resp = comm.get_response(resp)
+@proxy.get("/devices/<device_id:int>")
+def get_device(device_id):
+    resp = comm.get("/devices/"+str(device_id))
+    resp = comm.get_response(resp)
     
-#     err_check = check_error_response(resp)
-#     if err_check is not None:
-#         abort(err_check[0], err_check[1])
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
     
-#     return send_response(resp.payload, resp.code)
+    return send_response(resp.payload, resp.code)
 
 # @proxy.delete("/devices/<device_id:int>")
 # def unregist_device(device_id):
@@ -149,16 +149,16 @@ def get_all_devices():
 
 
 # ###### States Endpoints########
-# @proxy.get("/devices/<device_id:int>/state")
-# def get_device_state(device_id):
-#     resp = comm.get("/devices/"+str(device_id)+"/state")
-#     resp = comm.get_response(resp)
+@proxy.get("/devices/<device_id:int>/state")
+def get_device_state(device_id):
+    resp = comm.get("/devices/"+str(device_id)+"/state")
+    resp = comm.get_response(resp)
     
-#     err_check = check_error_response(resp)
-#     if err_check is not None:
-#         abort(err_check[0], err_check[1])
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
     
-#     return send_response(resp.payload, resp.code)
+    return send_response(resp.payload, resp.code)
 
 # @proxy.put("/devices/<device_id:int>/state")
 # def change_device_state(device_id):
@@ -194,16 +194,16 @@ def get_all_devices():
 
 
 # ###### Types Endpoints########
-# @proxy.get("/devices/<device_id:int>/type")
-# def get_device_type(device_id):
-#     resp = comm.get("/devices/"+str(device_id)+"/type")
-#     resp = comm.get_response(resp)
+@proxy.get("/devices/<device_id:int>/type")
+def get_device_type(device_id):
+    resp = comm.get("/devices/"+str(device_id)+"/type")
+    resp = comm.get_response(resp)
     
-#     err_check = check_error_response(resp)
-#     if err_check is not None:
-#         abort(err_check[0], err_check[1])
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
     
-#     return send_response(resp.payload, resp.code)
+    return send_response(resp.payload, resp.code)
 
 
 # ###### Services Endpoints########

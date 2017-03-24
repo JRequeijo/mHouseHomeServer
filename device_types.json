@@ -1,4 +1,1 @@
-{ "DEVICE_TYPES": [ {"id": 1, "name": "Adjustable Light", "properties": [1, 2]},
-					{"id": 2, "name": "Temperature Sensor", "properties": [3]}
-					]
-}
+{"DEVICE_TYPES": [{"properties": [1, 2], "id": 1, "name": "Adjustable Light"}, {"properties": [3], "id": 2, "name": "Temperature Sensor"}]}

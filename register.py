@@ -12,10 +12,12 @@ def register(server_config_file_name):
         f = open(server_config_file_name, "r")
         confs = json.load(f)
         f.close()
-        return registerFromFile(server_config_file_name ,confs)
+        if registerFromFile(server_config_file_name ,confs):
+            return get_core_configs()
     except:
-        return registerFromScratch(server_config_file_name)
-
+        if registerFromScratch(server_config_file_name):
+            return get_core_configs()
+    
 def registerFromFile(server_config_file_name, confs):
     data = {}
     data["address"] = confs["address"]
@@ -187,4 +189,66 @@ def registerFromScratch(server_config_file_name):
                 cred_ok = False
 
     return True
+
+
+def get_core_configs():
+
+    core_configs_url = 'http://127.0.0.1:8000/configs/'
+
+    client = requests.session()
+
+    headers = {'Accept':'application/json'}
+
+    try:
+        # Retrieve the CSRF token first
+        resp = client.get(core_configs_url, headers=headers)
+        js = json.loads(resp.text)
+    except:
+        print "ERROR: You don't have connection to the internet or the main server is down"
+        return False
+
+    try:
+        print "Getting core configs (device_types)"
+        device_types_file = open("device_types.json", "w")
+        data = {}
+        data["DEVICE_TYPES"] = js["device_types"]
+        json.dump(data, device_types_file)
+        device_types_file.close()
+    except:
+        print "ERROR: Couldn't open/create device_types.json file"
+        return False
+
+    try:
+        print "Getting core configs (value_types)"
+        value_types_file = open("value_types.json", "w")
+        data = {}
+        data["SCALAR_TYPES"] = js["value_types"]["scalars"]
+        data["ENUM_TYPES"] = js["value_types"]["enums"]
+
+        for e in data["ENUM_TYPES"]:
+            ch = e["choices"]
+            e["choices"] = {}
+            for ele in ch:
+                for ele1 in js["value_types"]["choices"]:
+                    if ele1["name"] == ele:
+                        e["choices"][str(ele)] = ele1["value"]
+
+        json.dump(data, value_types_file)
+        value_types_file.close()
+    except:
+        print "ERROR: Couldn't open/create value_types.json file"
+        return False
+
+    try:
+        print "Getting core configs (property_types)"
+        property_types_file = open("property_types.json", "w")
+        data = {}
+        data["PROPERTY_TYPES"] = js["property_types"]
+        json.dump(data, property_types_file)
+        property_types_file.close()
+    except:
+        print "ERROR: Couldn't open/create property_types.json file"
+        return False
     
+    return True
+

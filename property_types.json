@@ -1,5 +1,1 @@
-{ "PROPERTY_TYPES": [ {"id": 1, "name": "On-Off", "access_mode": "RW", "value_type": "ENUM", "value_type_id": 1},
-				  {"id": 2, "name": "Intensity", "access_mode": "RW", "value_type": "SCALAR", "value_type_id": 1},
-				  {"id": 3, "name": "Temperature", "access_mode": "RO", "value_type": "SCALAR", "value_type_id": 1}
-				 ]
-}
+{"PROPERTY_TYPES": [{"access_mode": "RW", "value_type_class": "ENUM", "id": 1, "value_type_id": 1, "name": "On-Off"}, {"access_mode": "RW", "value_type_class": "SCALAR", "id": 2, "value_type_id": 1, "name": "Intensity"}, {"access_mode": "RO", "value_type_class": "SCALAR", "id": 3, "value_type_id": 1, "name": "Temperature"}]}

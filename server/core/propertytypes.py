@@ -51,7 +51,7 @@ try:
         id = ele["id"]
         name = ele["name"]
         access_mode = ele["access_mode"]
-        value_type = ele["value_type"]
+        value_type = ele["value_type_class"]
         value_type_id = ele["value_type_id"]
 
         PROPERTY_TYPES[int(id)] = PropertyType(id, name, access_mode, value_type, value_type_id)

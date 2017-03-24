@@ -55,29 +55,29 @@ class EnumValueType:
             return False
 
 # Array Value Type
-class ArrayValueType:
-    def __init__(self, array_id, name, max_len, default_value):
-        self.id = array_id
-        self.name = name
-        self.max_len = max_len
+# class ArrayValueType:
+#     def __init__(self, array_id, name, max_len, default_value):
+#         self.id = array_id
+#         self.name = name
+#         self.max_len = max_len
 
-        if (default_value is not None) and (len(str(default_value)) > max_len):
-            raise Exception("Invalid Default Value")
+#         if (default_value is not None) and (len(str(default_value)) > max_len):
+#             raise Exception("Invalid Default Value")
 
-        self.default_value = default_value
+#         self.default_value = default_value
 
-    def validate(self, value):
-        if len(value) < self.max_len:
-            return True
-        else:
-            return False
+#     def validate(self, value):
+#         if len(value) < self.max_len:
+#             return True
+#         else:
+#             return False
 
 SCALAR_VALUE_TYPES = {'0': ScalarValueType(0, "Default_ScalarValueType", "empty", 0, 100, 1, 0)}
 
 ENUM_VALUE_TYPES = {'0': EnumValueType(0, "Default_EnumValueType",\
                                         {"default_key":"default_value"}, "default_key")}
 
-ARRAY_VALUE_TYPES = {'0': ArrayValueType(0, "Default_ArrayValueType", 15, "Default_value")}
+# ARRAY_VALUE_TYPES = {'0': ArrayValueType(0, "Default_ArrayValueType", 15, "Default_value")}
 
 try:
     f = open("value_types.json", "r")
@@ -88,7 +88,7 @@ try:
     for ele in file["SCALAR_TYPES"]:
         id = ele["id"]
         name = ele["name"]
-        unit = ele["unit"]
+        unit = ele["units"]
         min_val = ele["min_value"]
         max_val = ele["max_value"]
         step = ele["step"]
@@ -99,18 +99,18 @@ try:
     for ele in file["ENUM_TYPES"]:
         id = ele["id"]
         name = ele["name"]
-        enum = ele["enum"]
+        enum = ele["choices"]
         deflt = ele["default_value"]
 
         ENUM_VALUE_TYPES[str(id)] = EnumValueType(id, name, enum, deflt)
 
-    for ele in file["ARRAY_TYPES"]:
-        id = ele["id"]
-        name = ele["name"]
-        max_len = ele["max_len"]
-        deflt = ele["default_value"]
+    # for ele in file["ARRAY_TYPES"]:
+    #     id = ele["id"]
+    #     name = ele["name"]
+    #     max_len = ele["max_len"]
+    #     deflt = ele["default_value"]
 
-        ARRAY_VALUE_TYPES[str(id)] = ArrayValueType(id, name, max_len, deflt)
+    #     ARRAY_VALUE_TYPES[str(id)] = ArrayValueType(id, name, max_len, deflt)
 
     f.close()
 except Exception as e:

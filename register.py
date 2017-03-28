@@ -59,7 +59,7 @@ def registerFromFile(server_config_file_name, confs):
         f.close()
         print 'Server Info Retrieved Successfully'
         return True
-    else:  
+    else:
         try:
             resp = client.post(server_regist_url, 
                             data=json.dumps(data), 
@@ -69,6 +69,12 @@ def registerFromFile(server_config_file_name, confs):
             return False
 
         if resp.status_code == 201:
+            f = open(server_config_file_name, "w")
+            js = json.loads(resp.text)
+            js["email"] = email
+            js["password"] = password
+            json.dump(js, f)
+            f.close()
             print 'Server Registed Successfully'
             return True
         else:
@@ -81,7 +87,7 @@ def registerFromFile(server_config_file_name, confs):
 
             if "detail" in js.keys():
                 print "ERROR ("+ str(resp.status_code)+"): "+str(js["detail"][0])
-            
+
             print "Please check if data on 'serverconf.json' file is correct."
             print "If you prefer you can delete that file to register from scratch."
             return False

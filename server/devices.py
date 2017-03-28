@@ -10,7 +10,97 @@ from core.devicetypes import DEVICE_TYPES, validate_device_type
 from core.services import SERVICES, validate_services
 from core.propertytypes import PROPERTY_TYPES
 import core.valuetypes as valuetypes
-# from server.communicator import Communicator
+
+import requests
+
+import thread
+import os.path
+def regist_device_on_cloud(device):
+    # try:
+
+    f = open(os.path.dirname(__file__) + '/../serverconf.json', "r")
+    file_data = json.load(f)
+
+    email = file_data['email']
+    password = file_data['password']
+    server_id = file_data['id']
+
+    resp = requests.get("http://127.0.0.1:8000/login/")
+    csrftoken = resp.cookies['csrftoken']
+    
+    headers = {'Accept':'application/json',\
+            'Content-Type':'application/json',\
+            'X-CSRFToken':csrftoken}
+    
+    resp = requests.get("http://127.0.0.1:8000/devices/",\
+                    headers=headers,\
+                    auth=(email, password))
+
+    if resp.status_code == 200:
+        js = json.loads(resp.text)
+        for ele in js:
+            if ele['local_id'] == device.id:
+                device.universal_id = ele['id']
+                resp = requests.patch("http://127.0.0.1:8000/devices/"+str(ele['id'])+"/",\
+                                        data=device.get_json(),\
+                                        headers=headers,\
+                                        auth=(email, password))
+                print resp.text
+                break
+    else:
+        csrftoken = resp.cookies['csrftoken']
+        headers['X-CSRFToken'] = csrftoken
+
+        data = device.get_info()
+        data['server'] = server_id
+
+        resp = requests.post("http://127.0.0.1:8000/devices/", data=json.dumps(data),\
+                        headers=headers,\
+                        auth=(email, password))
+
+        if resp.status_code == 200:
+            js = json.loads(resp.text)
+            for ele in js:
+                if ele['local_id'] == device.id:
+                    device.universal_id = ele['id']
+        elif resp.status_code == 400:
+            js = json.loads(resp.text)
+            try:
+                errs = js['non_field_errors']
+                for ele in errs:
+                    if 'local_id' in ele:
+                        # resp = requests.patch("http://127.0.0.1:8000/devices/"+str(),\
+                        #                         data=json.dumps(data),\
+                        #                         headers=headers,\
+                        #                         auth=(email, password))
+                        print "Problems with local_id"
+                    elif 'address' in ele:
+                        # resp = requests.patch("http://127.0.0.1:8000/devices/", data=json.dumps(data),\
+                        #         headers=headers,\
+                        #         auth=(email, password))
+                        print "Problems with address"
+            except:
+                print "ERROR DUMMMMM"
+                 
+    # except:
+    #     print "ERRO DUMMY"
+
+def unregist_device_from_cloud(device_id):
+    try:
+        resp = requests.get("http://127.0.0.1:8000/login/")
+
+        csrftoken = resp.cookies['csrftoken']
+        headers = {'Accept':'application/json',\
+                'Content-Type':'application/json',\
+                'X-CSRFToken':csrftoken}
+
+        resp = requests.delete("http://127.0.0.1:8000/devices/"+str(device_id),\
+                        headers=headers,\
+                        auth=("josediogo_rd@hotmail.com", "petrucci1"))
+
+        print resp.text
+    except:
+        print "ERRO DUMMY2"
 
 
 class Device(Resource):
@@ -28,6 +118,7 @@ class Device(Resource):
 
         #### Device Data ####
         self.id = device_id
+        self.universal_id = None
         self.name = name
 
         if validate_IPv4(address):
@@ -63,7 +154,7 @@ class Device(Resource):
     def get_info(self):
         return {"device_id": self.id, "name": self.name, "address": self.address,\
                 "device_type": self.device_type.type.id, "services": self.services_ids,\
-                "state":self.state.get_simplified_info()}
+                "state":self.state.get_simplified_info(), "universal_id":self.universal_id}
 
     def get_json(self):
         return json.dumps(self.get_info())
@@ -93,6 +184,8 @@ class Device(Resource):
         self.device_type.delete()
         self.state.delete()
         self.services.delete()
+
+        thread.start_new_thread(unregist_device_from_cloud, (self.universal_id,))
 
         return True
 
@@ -197,7 +290,9 @@ class DevicesList(Resource):
             try:
                 check_on_body(body, ["name", "address", "device_type", "services"])
 
-                self.add_device(body)
+                dev = self.add_device(body)
+
+                thread.start_new_thread(regist_device_on_cloud, (dev,))
 
                 self.payload = self.get_payload()
                 return status(defines.Codes.CREATED, self.payload)

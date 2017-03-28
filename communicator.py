@@ -7,55 +7,55 @@ class Communicator:
         self.host = host
         self.port = port
         self.client = None
-    
+
     def start(self):
         self.client = HelperClient(server=(self.host, self.port))
-    
+
     def stop(self):
         self.client.stop()
-    
+
     def restart(self):
         self.stop()
         self.start()
-    
+
     def get(self, path):
         self.start()
         resp = self.client.get(path)
         self.stop()
-        
+
         return resp
-    
+
     def post(self, path, payload):
         self.start()
         resp = self.client.post(path, (defines.Content_types["application/json"], payload))
         self.stop()
-        
+
         return resp
-    
+
     def put(self, path, payload=""):
         self.start()
         resp = self.client.put(path, (defines.Content_types["application/json"], payload))
         self.stop()
-        
+
         return resp
-    
+
     def delete(self, path):
         self.start()
         resp = self.client.delete(path)
         self.stop()
-        
+
         return resp
-    
+
     def discover(self, path):
         self.start()
         resp = self.client.discover(path)
         self.stop()
-        
+
         return resp
-    
+
     def get_response(self, data):
         return Response(data)
-        
+
 
 class Response:
     def __init__(self, data):

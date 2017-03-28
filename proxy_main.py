@@ -40,11 +40,11 @@ comm = Communicator("192.168.1.67")
 def get_info():
     resp = comm.get("/info")
     resp = comm.get_response(resp)
-    
+
     err_check = check_error_response(resp)
     if err_check is not None:
         abort(err_check[0], err_check[1])
-    
+
     return send_response(resp.payload, resp.code)
 
 # @proxy.put('/info')
@@ -83,44 +83,34 @@ def get_info():
 def get_all_devices():
     resp = comm.get("/devices")
     resp = comm.get_response(resp)
-    
+
     err_check = check_error_response(resp)
     if err_check is not None:
         abort(err_check[0], err_check[1])
-    
+
     return send_response(resp.payload, resp.code)
 
-# @proxy.post("/devices")
-# def regist_device():
-#     if request.headers['content-type'] == "application/json":
-#         try:
-#             body = request.json
-#         except:
-#             abort(400, "Request body not properly json formated")
-            
-#         if body is not None:
-#             try:
-#                 data = {}
-#                 data["address"] = body["address"]
-#                 data["name"] = body["name"]
-#                 data["type"] = body["type"]
-#                 data["services"] = body["services"]
-        
-#                 resp = comm.post("/devices", json.dumps(data))
-#                 resp = comm.get_response(resp)
-                
-#                 err_check = check_error_response(resp)
-#                 if err_check is not None:
-#                     abort(err_check[0], err_check[1])
-                
-#                 return send_response(resp.payload, resp.code)
-#             except KeyError as err:
-#                 abort(400, "Field '"+err.message+"' missing on request json body")
-        
-#         else:
-#             abort(400, "Request body formated in json is missing")
-#     else:
-#         abort(415, "Request body content format not json")
+@proxy.post("/devices")
+def regist_device():
+    if request.headers['content-type'] == "application/json":
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
+
+        if body is not None:
+            resp = comm.post("/devices", json.dumps(body))
+            resp = comm.get_response(resp)
+
+            err_check = check_error_response(resp)
+            if err_check is not None:
+                abort(err_check[0], err_check[1])
+
+            return send_response(resp.payload, resp.code)
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 
 
@@ -129,23 +119,23 @@ def get_all_devices():
 def get_device(device_id):
     resp = comm.get("/devices/"+str(device_id))
     resp = comm.get_response(resp)
-    
+
     err_check = check_error_response(resp)
     if err_check is not None:
         abort(err_check[0], err_check[1])
-    
+
     return send_response(resp.payload, resp.code)
 
-# @proxy.delete("/devices/<device_id:int>")
-# def unregist_device(device_id):
-#     resp = comm.delete("/devices/"+str(device_id))
-#     resp = comm.get_response(resp)
-    
-#     err_check = check_error_response(resp)
-#     if err_check is not None:
-#         abort(err_check[0], err_check[1])
-    
-#     return send_response(resp.payload, resp.code)
+@proxy.delete("/devices/<device_id:int>")
+def unregist_device(device_id):
+    resp = comm.delete("/devices/"+str(device_id))
+    resp = comm.get_response(resp)
+
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
+
+    return send_response(resp.payload, resp.code)
 
 
 # ###### States Endpoints########
@@ -153,44 +143,34 @@ def get_device(device_id):
 def get_device_state(device_id):
     resp = comm.get("/devices/"+str(device_id)+"/state")
     resp = comm.get_response(resp)
-    
+
     err_check = check_error_response(resp)
     if err_check is not None:
         abort(err_check[0], err_check[1])
-    
+
     return send_response(resp.payload, resp.code)
 
-# @proxy.put("/devices/<device_id:int>/state")
-# def change_device_state(device_id):
-#     if request.headers['content-type'] == "application/json":
-#         try:
-#             body = request.json
-#         except:
-#             abort(400, "Request body not properly json formated")
-            
-#         if body is not None:
-#             try:
-#                 data = {}
-#                 data["address"] = body["address"]
-#                 data["name"] = body["name"]
-#                 data["type"] = body["type"]
-#                 data["services"] = body["services"]
-        
-#                 resp = comm.put("/devices/"+str(device_id)+"/state", json.dumps(data))
-#                 resp = comm.get_response(resp)
-                
-#                 err_check = check_error_response(resp)
-#                 if err_check is not None:
-#                     abort(err_check[0], err_check[1])
-                
-#                 return send_response(resp.payload, resp.code)
-            
-#             except KeyError as err:
-#                 abort(400, "Field '"+err.message+"' missing on request json body")
-#         else:
-#             abort(400, "Request body formated in json is missing")
-#     else:
-#         abort(415, "Request body content format not json")
+@proxy.put("/devices/<device_id:int>/state")
+def change_device_state(device_id):
+    if request.headers['content-type'] == "application/json":
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
+
+        if body is not None:
+            resp = comm.put("/devices/"+str(device_id)+"/state", json.dumps(body))
+            resp = comm.get_response(resp)
+
+            err_check = check_error_response(resp)
+            if err_check is not None:
+                abort(err_check[0], err_check[1])
+
+            return send_response(resp.payload, resp.code)
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 
 # ###### Types Endpoints########
@@ -207,16 +187,16 @@ def get_device_type(device_id):
 
 
 # ###### Services Endpoints########
-# @proxy.get("/devices/<device_id:int>/services")
-# def get_device_services(device_id):
-#     resp = comm.get("/devices/"+str(device_id)+"/services")
-#     resp = comm.get_response(resp)
+@proxy.get("/devices/<device_id:int>/services")
+def get_device_services(device_id):
+    resp = comm.get("/devices/"+str(device_id)+"/services")
+    resp = comm.get_response(resp)
     
-#     err_check = check_error_response(resp)
-#     if err_check is not None:
-#         abort(err_check[0], err_check[1])
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
     
-#     return send_response(resp.payload, resp.code)
+    return send_response(resp.payload, resp.code)
 
 
 # @proxy.post("/devices/<device_id:int>/services")
@@ -282,7 +262,7 @@ def send_response(data, code=None):
 def check_error_response(response):
     if response.code >= defines.Codes.ERROR_LOWER_BOUND:
         code, phrase = utils.CoAP2HTTP_code(response.code)
-        
+
         if response.payload is not None:
             d = json.loads(response.payload)
             return (code, d["error_msg"])

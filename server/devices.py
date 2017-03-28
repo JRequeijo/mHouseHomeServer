@@ -10,8 +10,6 @@ from core.devicetypes import DEVICE_TYPES, validate_device_type
 from core.services import SERVICES, validate_services
 from core.propertytypes import PROPERTY_TYPES
 import core.valuetypes as valuetypes
-# from twisted.protocols.dict import define
-# from server.infrastructure.device import valuetypes
 # from server.communicator import Communicator
 
 
@@ -54,7 +52,7 @@ class Device(Resource):
 
         # services of the device
         self.services = DeviceServicesResource(self)
-        
+
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"
         self.payload = self.get_payload()
@@ -122,7 +120,8 @@ class DevicesList(Resource):
         res = {}
         for d in devices:
             id = d["device_id"]
-            res[int(id)] = Device(self, id, d["name"], d["address"], d["type"], d["services"])
+            res[int(id)] = Device(self, id, d["name"], d["address"],\
+                                        d["device_type"], d["services"])
 
         self.devices = res
 
@@ -139,14 +138,15 @@ class DevicesList(Resource):
 
         existing_dev = self.check_existing_device(device["address"])
         if existing_dev is not None:
-            self.devices[existing_dev].delete()
-            device_id = existing_dev
+            raise AppError(defines.Codes.BAD_REQUEST, "Device with address ("+device["address"]\
+                                                        +") already exists")
         else:
             device_id = self.server.id_gen.new_device_id()
 
         #alterar a criacao do Device pondo todos os campos
         res = Device(self, device_id, name=device["name"],\
-                     address=device["address"], type_id=device["type"], services=device["services"])
+                     address=device["address"], type_id=device["device_type"],\
+                     services=device["services"])
         self.devices[device_id] = res
 
         return res
@@ -195,7 +195,7 @@ class DevicesList(Resource):
                 print "ERROR: Request payload not json"
                 return error(defines.Codes.BAD_REQUEST, "Body content not properly json formated")
             try:
-                check_on_body(body, ["name", "address", "type", "services"])
+                check_on_body(body, ["name", "address", "device_type", "services"])
 
                 self.add_device(body)
 
@@ -293,6 +293,22 @@ class DeviceState(Resource):
             elif isinstance(k, basestring):
                 try:
                     key = int(k)
+                    for p in self.state:
+                        if p["property_id"] == key:
+                            prop = PROPERTY_TYPES[key]
+                            if prop.validate(new_state[k]):
+                                if prop.accessmode in ["WO", "RW"]:
+                                    if prop.valuetype_class == valuetypes.SCALAR:
+                                        p["value"] = int(new_state[k])
+                                    else:
+                                        p["value"] = str(new_state[k])
+                                else:
+                                    raise AppError(defines.Codes.FORBIDDEN,\
+                                        "Property ("+str(key)+") can't be written (access mode: "\
+                                                                        +str(prop.accessmode)+")")
+                            else:
+                                raise AppError(defines.Codes.BAD_REQUEST,\
+                                            "Invalid property new value ("+str(new_state[k])+")")
                 except:
                     for p in self.state:
                         if p["name"] == str(k):
@@ -303,8 +319,6 @@ class DeviceState(Resource):
                                         p["value"] = int(new_state[k])
                                     else:
                                         p["value"] = str(new_state[k])
-
-                                    return True
                                 else:
                                     raise AppError(defines.Codes.FORBIDDEN,\
                                             "Property ("+str(k)+") can't be written (access mode: "\
@@ -313,30 +327,10 @@ class DeviceState(Resource):
                                 raise AppError(defines.Codes.BAD_REQUEST,\
                                                 "Invalid property new value ("\
                                                             +str(new_state[k])+")")
-
-                for p in self.state:
-                    if p["property_id"] == key:
-                        prop = PROPERTY_TYPES[key]
-                        if prop.validate(new_state[k]):
-                            if prop.accessmode in ["WO", "RW"]:
-                                if prop.valuetype_class == valuetypes.SCALAR:
-                                    p["value"] = int(new_state[k])
-                                else:
-                                    p["value"] = str(new_state[k])
-
-                                return True
-                            else:
-                                raise AppError(defines.Codes.FORBIDDEN,\
-                                        "Property ("+str(key)+") can't be written (access mode: "\
-                                                                        +str(prop.accessmode)+")")
-                        else:
-                            raise AppError(defines.Codes.BAD_REQUEST,\
-                                        "Invalid property new value ("+str(new_state[k])+")")
-
             else:
                 raise AppError(defines.Codes.INTERNAL_SERVER_ERROR,\
                             "Property id or name invalid format. Must be int or string.")
-
+        return True
     def delete(self):
         del self.device.server.root[self.root_uri]
         return True

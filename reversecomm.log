@@ -1,11 +1,11 @@
-2017-03-28 21:18:00,129 - MainThread - coapthon.server.coap - DEBUG - receive_datagram - From ('192.168.1.67', 53417), To None, NON-34357, POST-None, [Uri-Path: devices, Content-Type: 50, ] {"name":"Device1", "...71 bytes
-2017-03-28 21:18:00,129 - MainThread - coapthon.layers.messagelayer - DEBUG - receive_request - From ('192.168.1.67', 53417), To None, NON-34357, POST-None, [Uri-Path: devices, Content-Type: 50, ] {"name":"Device1", "...71 bytes
-2017-03-28 21:18:00,131 - Thread-2   - coapthon.layers.messagelayer - DEBUG - send_response - From None, To ('192.168.1.67', 53417), None-None, CREATED-None, [Content-Type: 50, ] {"devices": [{"name"...128 bytes
-2017-03-28 21:18:00,132 - Thread-2   - coapthon.server.coap - DEBUG - send_datagram - From None, To ('192.168.1.67', 53417), NON-194, CREATED-None, [Content-Type: 50, ] {"devices": [{"name"...128 bytes
-2017-03-28 21:18:00,145 - Dummy-4    - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): 127.0.0.1
-2017-03-28 21:18:00,156 - Dummy-4    - requests.packages.urllib3.connectionpool - DEBUG - "GET /login/ HTTP/1.1" 200 None
-2017-03-28 21:18:00,160 - Dummy-4    - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): 127.0.0.1
-2017-03-28 21:18:00,368 - Dummy-4    - requests.packages.urllib3.connectionpool - DEBUG - "GET /devices/ HTTP/1.1" 200 None
-2017-03-28 21:18:00,382 - Dummy-4    - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): 127.0.0.1
-2017-03-28 21:18:00,836 - Dummy-4    - requests.packages.urllib3.connectionpool - DEBUG - "PATCH /devices/1/ HTTP/1.1" 500 None
-2017-03-28 21:18:31,368 - MainThread - coapthon.server.coap - INFO - Stop server
+2017-03-28 23:35:55,159 - MainThread - coapthon.server.coap - DEBUG - receive_datagram - From ('192.168.1.67', 55506), To None, NON-9524, POST-None, [Uri-Path: devices, Content-Type: 50, ] {"name":"Device2", "...71 bytes
+2017-03-28 23:35:55,159 - MainThread - coapthon.layers.messagelayer - DEBUG - receive_request - From ('192.168.1.67', 55506), To None, NON-9524, POST-None, [Uri-Path: devices, Content-Type: 50, ] {"name":"Device2", "...71 bytes
+2017-03-28 23:35:55,161 - Thread-2   - coapthon.layers.messagelayer - DEBUG - send_response - From None, To ('192.168.1.67', 55506), None-None, CREATED-None, [Content-Type: 50, ] {"devices": [{"name"...128 bytes
+2017-03-28 23:35:55,162 - Thread-2   - coapthon.server.coap - DEBUG - send_datagram - From None, To ('192.168.1.67', 55506), NON-416, CREATED-None, [Content-Type: 50, ] {"devices": [{"name"...128 bytes
+2017-03-28 23:35:55,301 - Dummy-4    - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): 127.0.0.1
+2017-03-28 23:35:55,498 - Dummy-4    - requests.packages.urllib3.connectionpool - DEBUG - "GET /login/ HTTP/1.1" 200 None
+2017-03-28 23:35:55,502 - Dummy-4    - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): 127.0.0.1
+2017-03-28 23:35:55,708 - Dummy-4    - requests.packages.urllib3.connectionpool - DEBUG - "GET /devices/ HTTP/1.1" 200 None
+2017-03-28 23:35:55,773 - Dummy-4    - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): 127.0.0.1
+2017-03-28 23:35:56,101 - Dummy-4    - requests.packages.urllib3.connectionpool - DEBUG - "PATCH /devices/3/ HTTP/1.1" 200 None
+2017-03-28 23:36:39,072 - MainThread - coapthon.server.coap - INFO - Stop server

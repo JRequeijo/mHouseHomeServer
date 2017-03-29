@@ -35,20 +35,21 @@ def regist_device_on_cloud(device):
     resp = requests.get("http://127.0.0.1:8000/devices/",\
                     headers=headers,\
                     auth=(email, password))
-
+    regist_done = False
     if resp.status_code == 200:
         js = json.loads(resp.text)
-        if js:
-            for ele in js:
-                if ele['local_id'] == device.id:
-                    device.universal_id = ele['id']
-                    resp = requests.patch("http://127.0.0.1:8000/devices/"+str(ele['id'])+"/",\
-                                            data=device.get_json(),\
-                                            headers=headers,\
-                                            auth=(email, password))
-                    print resp.text
-                    break
-        else:
+        for ele in js:
+            if ele['address'] == device.address:
+                device.universal_id = ele['id']
+                resp = requests.patch("http://127.0.0.1:8000/devices/"+str(ele['id'])+"/",\
+                                        data=device.get_json(),\
+                                        headers=headers,\
+                                        auth=(email, password))
+                print resp.text
+                regist_done = True
+                break
+
+        if not regist_done:
 
             data = device.get_info()
             data['server'] = server_id
@@ -60,20 +61,14 @@ def regist_device_on_cloud(device):
             if resp.status_code == 200:
                 js = json.loads(resp.text)
                 for ele in js:
-                    if ele['local_id'] == device.id:
+                    if ele['address'] == device.address:
                         device.universal_id = ele['id']
             elif resp.status_code == 400:
                 js = json.loads(resp.text)
                 try:
                     errs = js['non_field_errors']
                     for ele in errs:
-                        if 'local_id' in ele:
-                            # resp = requests.patch("http://127.0.0.1:8000/devices/"+str(),\
-                            #                         data=json.dumps(data),\
-                            #                         headers=headers,\
-                            #                         auth=(email, password))
-                            print "Problems with local_id"
-                        elif 'address' in ele:
+                        if 'address' in ele:
                             # resp = requests.patch("http://127.0.0.1:8000/devices/", data=json.dumps(data),\
                             #         headers=headers,\
                             #         auth=(email, password))

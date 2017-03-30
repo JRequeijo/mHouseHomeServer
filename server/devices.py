@@ -342,7 +342,7 @@ class DeviceState(Resource):
     def get_payload(self):
         return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
 
-    def change_state(self, new_state):
+    def change_state(self, new_state, origin):
 
         properties = self.device.device_type.type.properties
 
@@ -359,42 +359,22 @@ class DeviceState(Resource):
                                 "Device does not have property ("+str(p)+")")
 
         for k in new_state.keys():
-            if isinstance(k, int):
-                for p in self.state:
-                    if p["property_id"] == int(k):
-                        prop = PROPERTY_TYPES[int(k)]
-                        if prop.validate(new_state[k]):
-                            if prop.accessmode in ["WO", "RW"]:
-                                if prop.valuetype_class == valuetypes.SCALAR:
-                                    p["value"] = int(new_state[k])
-                                else:
-                                    p["value"] = str(new_state[k])
-
-                                return True
-                            else:
-                                raise AppError(defines.Codes.FORBIDDEN,\
-                                        "Property ("+str(k)+") can't be written (access mode: "+\
-                                                                            str(prop.accessmode))
-                        else:
-                            raise AppError(defines.Codes.BAD_REQUEST,\
-                                            "Invalid property new value ("+str(new_state[k])+")")
-
-            elif isinstance(k, basestring):
+            if isinstance(k, basestring):
                 try:
                     key = int(k)
                     for p in self.state:
                         if p["property_id"] == key:
                             prop = PROPERTY_TYPES[key]
                             if prop.validate(new_state[k]):
-                                if prop.accessmode in ["WO", "RW"]:
-                                    if prop.valuetype_class == valuetypes.SCALAR:
-                                        p["value"] = int(new_state[k])
-                                    else:
-                                        p["value"] = str(new_state[k])
-                                else:
+                                if self.device.address != str(origin) and\
+                                    prop.accessmode not in ["WO", "RW"]:
                                     raise AppError(defines.Codes.FORBIDDEN,\
-                                        "Property ("+str(key)+") can't be written (access mode: "\
+                                        "Property ("+str(key)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
+                                if prop.valuetype_class == valuetypes.SCALAR:
+                                    p["value"] = int(new_state[k])
+                                else:
+                                    p["value"] = str(new_state[k])
                             else:
                                 raise AppError(defines.Codes.BAD_REQUEST,\
                                             "Invalid property new value ("+str(new_state[k])+")")
@@ -403,15 +383,15 @@ class DeviceState(Resource):
                         if p["name"] == str(k):
                             prop = PROPERTY_TYPES[int(p["property_id"])]
                             if prop.validate(new_state[k]):
-                                if prop.accessmode in ["WO", "RW"]:
-                                    if prop.valuetype_class == valuetypes.SCALAR:
-                                        p["value"] = int(new_state[k])
-                                    else:
-                                        p["value"] = str(new_state[k])
-                                else:
+                                if self.device.address != str(origin) and\
+                                    prop.accessmode not in ["WO", "RW"]:
                                     raise AppError(defines.Codes.FORBIDDEN,\
-                                            "Property ("+str(k)+") can not be written (access mode: "\
+                                        "Property ("+str(k)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
+                                if prop.valuetype_class == valuetypes.SCALAR:
+                                    p["value"] = int(new_state[k])
+                                else:
+                                    p["value"] = str(new_state[k])
                             else:
                                 raise AppError(defines.Codes.BAD_REQUEST,\
                                                 "Invalid property new value ("\
@@ -431,6 +411,7 @@ class DeviceState(Resource):
 
     def render_PUT(self, request):
         if request.content_type is defines.Content_types.get("application/json"):
+            origin = request.source[0]
             try:
                 body = json.loads(request.payload)
             except:
@@ -440,7 +421,7 @@ class DeviceState(Resource):
 
             try:
                 if isinstance(body, dict):
-                    self.change_state(body)
+                    self.change_state(body, origin)
                 else:
                     raise AppError(defines.Codes.BAD_REQUEST,\
                             "Content must be a json dictionary")

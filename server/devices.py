@@ -410,7 +410,7 @@ class DeviceState(Resource):
                                         p["value"] = str(new_state[k])
                                 else:
                                     raise AppError(defines.Codes.FORBIDDEN,\
-                                            "Property ("+str(k)+") can't be written (access mode: "\
+                                            "Property ("+str(k)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
                             else:
                                 raise AppError(defines.Codes.BAD_REQUEST,\

@@ -275,6 +275,7 @@ def check_error_response(response):
 ######### Handle Errors #############
 @proxy.error(400)
 @proxy.error(404)
+@proxy.error(403)
 @proxy.error(405)
 @proxy.error(415)
 @proxy.error(500)

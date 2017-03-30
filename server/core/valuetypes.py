@@ -29,11 +29,15 @@ class ScalarValueType:
             self.default_value = default_value
 
     def validate(self, value):
-        value = float(value)
-        if (value >= self.min_value) and (value <= self.max_value):
-            check = (value - self.min_value) / self.step
-            if check.is_integer():
-                return True
+        try:
+            value = float(value)
+            if (value >= self.min_value) and (value <= self.max_value):
+                check = (value - self.min_value) / self.step
+                if check.is_integer():
+                    return True
+        except:
+            pass
+
         return False
 
 # Enum Value Type

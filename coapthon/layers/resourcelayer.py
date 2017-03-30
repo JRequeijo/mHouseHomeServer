@@ -80,6 +80,10 @@ class ResourceLayer(object):
             pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
+            if(resource in defines.Codes.LIST):
+                transaction.response.code = resource
+                transaction.response.payload = callback
+                return transaction
             resource = self._handle_separate(transaction, callback)
             if not isinstance(resource, Resource):  # pragma: no cover
                 transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
@@ -171,6 +175,10 @@ class ResourceLayer(object):
             pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
+            if resource in defines.Codes.LIST:
+                transaction.response.code = resource
+                transaction.response.payload = callback
+                return transaction
             resource = self._handle_separate(transaction, callback)
             if not isinstance(resource, Resource):  # pragma: no cover
                 transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
@@ -298,6 +306,10 @@ class ResourceLayer(object):
             pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
+            if resource in defines.Codes.LIST:
+                transaction.response.code = resource
+                transaction.response.payload = callback
+                return transaction
             resource = self._handle_separate(transaction, callback)
             if not isinstance(resource, Resource):  # pragma: no cover
                 transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
@@ -395,6 +407,10 @@ class ResourceLayer(object):
             pass
         elif isinstance(ret, tuple) and len(ret) == 2:
             resource, callback = ret
+            if(resource in defines.Codes.LIST):
+                transaction.response.code = resource
+                transaction.response.payload = callback
+                return transaction
             ret = self._handle_separate(transaction, callback)
             if not isinstance(ret, bool):  # pragma: no cover
                 transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
@@ -468,6 +484,10 @@ class ResourceLayer(object):
             pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
+            if resource in defines.Codes.LIST:
+                transaction.response.code = resource
+                transaction.response.payload = callback
+                return transaction
             resource = self._handle_separate(transaction, callback)
             if not isinstance(resource, Resource):  # pragma: no cover
                 transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number

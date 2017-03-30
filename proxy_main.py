@@ -9,6 +9,8 @@ import requests
 
 from register import *
 from communicator import Communicator
+from utils import AppError
+import logging.config
 
 # from proxy.server import Server
 # from utils import AppCoAPError, AppError, get_my_ip, CoAP2HTTP_code
@@ -17,6 +19,7 @@ from communicator import Communicator
 # from gateway.proxy.backupsaver import BackupSaver
 # from server.communicator import Communicator
 
+logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
 
 if not register("serverconf.json"):
     sys.exit()
@@ -38,7 +41,11 @@ comm = Communicator("192.168.1.67")
 @proxy.get('/')
 @proxy.get('/info')
 def get_info():
-    resp = comm.get("/info")
+    try:
+        resp = comm.get("/info", timeout=2)
+    except AppError as err:
+        abort(504, err.msg)
+    
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -81,7 +88,10 @@ def get_info():
 # ###### Devices List Endpoints########
 @proxy.get("/devices")
 def get_all_devices():
-    resp = comm.get("/devices")
+    try: 
+        resp = comm.get("/devices", timeout=2)
+    except AppError as err:
+        abort(504, err.msg)
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -99,7 +109,10 @@ def regist_device():
             abort(400, "Request body not properly json formated")
 
         if body is not None:
-            resp = comm.post("/devices", json.dumps(body))
+            try:
+                resp = comm.post("/devices", json.dumps(body), timeout=2)
+            except AppError as err:
+                abort(504, err.msg)
             resp = comm.get_response(resp)
 
             err_check = check_error_response(resp)
@@ -117,7 +130,10 @@ def regist_device():
 # ###### Single Device Endpoints########
 @proxy.get("/devices/<device_id:int>")
 def get_device(device_id):
-    resp = comm.get("/devices/"+str(device_id))
+    try:
+        resp = comm.get("/devices/"+str(device_id), timeout=2)
+    except AppError as err:
+        abort(504, err.msg)
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -128,7 +144,10 @@ def get_device(device_id):
 
 @proxy.delete("/devices/<device_id:int>")
 def unregist_device(device_id):
-    resp = comm.delete("/devices/"+str(device_id))
+    try:
+        resp = comm.delete("/devices/"+str(device_id), timeout=2)
+    except AppError as err:
+        abort(504, err.msg)
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -141,7 +160,10 @@ def unregist_device(device_id):
 # ###### States Endpoints########
 @proxy.get("/devices/<device_id:int>/state")
 def get_device_state(device_id):
-    resp = comm.get("/devices/"+str(device_id)+"/state")
+    try:
+        resp = comm.get("/devices/"+str(device_id)+"/state", timeout=2)
+    except AppError as err:
+        abort(504, err.msg)
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -159,7 +181,10 @@ def change_device_state(device_id):
             abort(400, "Request body not properly json formated")
 
         if body is not None:
-            resp = comm.put("/devices/"+str(device_id)+"/state", json.dumps(body))
+            try:
+                resp = comm.put("/devices/"+str(device_id)+"/state", json.dumps(body), timeout=2)
+            except AppError as err:
+                abort(504, err.msg)
             resp = comm.get_response(resp)
 
             err_check = check_error_response(resp)
@@ -176,7 +201,10 @@ def change_device_state(device_id):
 # ###### Types Endpoints########
 @proxy.get("/devices/<device_id:int>/type")
 def get_device_type(device_id):
-    resp = comm.get("/devices/"+str(device_id)+"/type")
+    try:
+        resp = comm.get("/devices/"+str(device_id)+"/type", timeout=2)
+    except AppError as err:
+        abort(504, err.msg)
     resp = comm.get_response(resp)
     
     err_check = check_error_response(resp)
@@ -189,7 +217,10 @@ def get_device_type(device_id):
 # ###### Services Endpoints########
 @proxy.get("/devices/<device_id:int>/services")
 def get_device_services(device_id):
-    resp = comm.get("/devices/"+str(device_id)+"/services")
+    try:
+        resp = comm.get("/devices/"+str(device_id)+"/services", timeout=2)
+    except AppError as err:
+        abort(504, err.msg)
     resp = comm.get_response(resp)
     
     err_check = check_error_response(resp)
@@ -279,6 +310,7 @@ def check_error_response(response):
 @proxy.error(405)
 @proxy.error(415)
 @proxy.error(500)
+@proxy.error(504)
 def errorHandler(error):
     return send_response(json.dumps({"error_code": error.status_code, "error_msg": error.body}))
 

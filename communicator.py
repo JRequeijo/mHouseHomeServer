@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from coapthon.client.helperclient import HelperClient
 from coapthon import defines
+from utils import AppError
 
 class Communicator: 
     def __init__(self, host, port=5683):
@@ -18,37 +19,60 @@ class Communicator:
         self.stop()
         self.start()
 
-    def get(self, path):
-        self.start()
-        resp = self.client.get(path)
+    def get(self, path, timeout=None):
+        try:
+            self.start()
+            resp = self.client.get(path, timeout=timeout)
+        except:
+            self.stop()
+            raise AppError(504, "Connection Timeout. Home Server is down.")
+
         self.stop()
 
         return resp
 
-    def post(self, path, payload):
-        self.start()
-        resp = self.client.post(path, (defines.Content_types["application/json"], payload))
+    def post(self, path, payload, timeout=None):
+        try:
+            self.start()
+            resp = self.client.post(path, (defines.Content_types["application/json"],\
+                                        payload), timeout=timeout)
+        except:
+            self.stop()
+            raise AppError(504, "Connection Timeout. Home Server is down.")
         self.stop()
 
         return resp
 
-    def put(self, path, payload=""):
-        self.start()
-        resp = self.client.put(path, (defines.Content_types["application/json"], payload))
+    def put(self, path, payload="", timeout=None):
+        try:
+            self.start()
+            resp = self.client.put(path, (defines.Content_types["application/json"],\
+                                    payload), timeout=timeout)
+        except:
+            self.stop()
+            raise AppError(504, "Connection Timeout. Home Server is down.")
         self.stop()
 
         return resp
 
-    def delete(self, path):
-        self.start()
-        resp = self.client.delete(path)
+    def delete(self, path, timeout=None):
+        try:
+            self.start()
+            resp = self.client.delete(path, timeout=timeout)
+        except:
+            self.stop()
+            raise AppError(504, "Connection Timeout. Home Server is down.")
         self.stop()
 
         return resp
 
-    def discover(self, path):
-        self.start()
-        resp = self.client.discover(path)
+    def discover(self, path, timeout=None):
+        try:
+            self.start()
+            resp = self.client.discover(path, timeout=timeout)
+        except:
+            self.stop()
+            raise AppError(504, "Connection Timeout. Home Server is down.")
         self.stop()
 
         return resp

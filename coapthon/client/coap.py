@@ -19,7 +19,6 @@ __author__ = 'Giacomo Tanganelli'
 
 logger = logging.getLogger(__name__)
 
-
 class CoAP(object):
     """
     Client class to perform requests to remote servers.

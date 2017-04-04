@@ -11,13 +11,7 @@ from register import *
 from communicator import Communicator
 from utils import AppError
 import logging.config
-
-# from proxy.server import Server
-# from utils import AppCoAPError, AppError, get_my_ip, CoAP2HTTP_code
-# from gateway.proxy.idgenerator import IDGenerator
-# from gateway.proxy.config import start_house_config
-# from gateway.proxy.backupsaver import BackupSaver
-# from server.communicator import Communicator
+import thread
 
 logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
 
@@ -34,6 +28,19 @@ proxy = Bottle()
 
 
 comm = Communicator("192.168.1.67")
+
+def save_server_confs(new_name):
+    try:
+        f = open("serverconf.json", "r")
+        data = json.load(f)
+        f.close()
+
+        data["name"] = new_name
+        f = open("serverconf.json", "w")
+        json.dump(data, f)
+        f.close()
+    except Exception as err:
+        print err.message
 
 # ################  PROXY ENDPOINTS  ##################
 
@@ -54,34 +61,35 @@ def get_info():
 
     return send_response(resp.payload, resp.code)
 
-# @proxy.put('/info')
-# def actualize_info():
-#     if request.headers['content-type'] == "application/json":
-#         try:
-#             body = request.json
-#         except:
-#             abort(400, "Request body not properly json formated")
-              
-#         if body is not None:
-#             try:
-#                 data = {}
-#                 data["name"] = body["name"]
-          
-#                 resp = comm.put("/info", json.dumps(data))
-#                 resp = comm.get_response(resp)
-                  
-#                 err_check = check_error_response(resp)
-#                 if err_check is not None:
-#                     abort(err_check[0], err_check[1])
-                  
-#                 return send_response(resp.payload, resp.code)
-#             except KeyError as err:
-#                 abort(400, "Field '"+err.message+"' missing on request json body")
-          
-#         else:
-#             abort(400, "Request body formated in json is missing")
-#     else:
-#         abort(415, "Request body content format not json")
+@proxy.put('/info')
+def actualize_info():
+    if request.headers['content-type'] == "application/json":
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
+
+        if body is not None:
+            try:
+                data = {}
+                data["name"] = body["name"]
+
+                resp = comm.put("/info", json.dumps(data), timeout=2)
+                resp = comm.get_response(resp)
+
+                err_check = check_error_response(resp)
+                if err_check is not None:
+                    abort(err_check[0], err_check[1])
+
+                thread.start_new_thread(save_server_confs, (data["name"],))
+
+                return send_response(resp.payload, resp.code)
+            except KeyError as err:
+                abort(400, "Field '"+err.message+"' missing on request json body")
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 
 
@@ -156,6 +164,33 @@ def unregist_device(device_id):
 
     return send_response(resp.payload, resp.code)
 
+@proxy.put('/devices/<device_id:int>')
+def actualize_device_info(device_id):
+    if request.headers['content-type'] == "application/json":
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
+
+        if body is not None:
+            try:
+                data = {}
+                data["name"] = body["name"]
+
+                resp = comm.put("/devices/"+str(device_id), json.dumps(data), timeout=2)
+                resp = comm.get_response(resp)
+
+                err_check = check_error_response(resp)
+                if err_check is not None:
+                    abort(err_check[0], err_check[1])
+
+                return send_response(resp.payload, resp.code)
+            except KeyError as err:
+                abort(400, "Field '"+err.message+"' missing on request json body")
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 # ###### States Endpoints########
 @proxy.get("/devices/<device_id:int>/state")

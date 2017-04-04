@@ -172,6 +172,27 @@ class Device(Resource):
         self.payload = self.get_payload()
         return self
 
+    def render_PUT(self, request):
+        if(request.content_type is defines.Content_types.get("application/json")):
+            try:
+                body = json.loads(request.payload)
+            except:
+                print "ERROR: Request payload not json"
+                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
+
+            try:
+                self.name = body["name"]
+
+                self.payload = self.get_payload()
+                return status(defines.Codes.CHANGED, self.payload)
+
+            except KeyError as err:
+                return error(defines.Codes.BAD_REQUEST,\
+                            "Field '"+str(err.message)+"' not found on request json body")
+        else:
+            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+                            "Content must be application/json")
+
     def render_DELETE(self, request):
         self.devices_list.remove_device(self.id)
 

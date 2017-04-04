@@ -17,7 +17,7 @@ def register(server_config_file_name):
     except:
         if registerFromScratch(server_config_file_name):
             return get_core_configs()
-    
+
 def registerFromFile(server_config_file_name, confs):
     data = {}
     data["address"] = confs["address"]

@@ -3,6 +3,7 @@
 import json
 
 from propertytypes import PROPERTY_TYPES
+import settings
 import logging
 
 
@@ -55,7 +56,7 @@ def validate_device_type(type_id):
 #     DEVICE_TYPES[str(new_type.id)] = new_type
 
 try:
-    f = open("device_types.json", "r")
+    f = open(settings.DEVICE_TYPES_CONFIG_FILE, "r")
 
     file = json.load(f)
     logger.info("Loading devicetypes.json File...")

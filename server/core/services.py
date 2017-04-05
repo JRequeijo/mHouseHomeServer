@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import settings
 import logging.config
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ def validate_services(service_ids):
 #         SERVICES[str(new_service.id)] = new_service
 
 try:
-    f = open("services.json", "r")
+    f = open(settings.SERVICES_CONFIG_FILE, "r")
 
     file = json.load(f)
     logger.info("Loading services.json file...")

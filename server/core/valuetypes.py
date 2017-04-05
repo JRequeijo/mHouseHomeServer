@@ -1,5 +1,5 @@
 import json
-
+import settings
 import logging.config
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ ENUM_VALUE_TYPES = {'0': EnumValueType(0, "Default_EnumValueType",\
 # ARRAY_VALUE_TYPES = {'0': ArrayValueType(0, "Default_ArrayValueType", 15, "Default_value")}
 
 try:
-    f = open("value_types.json", "r")
+    f = open(settings.VALUE_TYPES_CONFIG_FILE, "r")
 
     file = json.load(f)
     logger.info("Loading valuetypes.json file...")

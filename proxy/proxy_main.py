@@ -7,8 +7,8 @@ import os
 import sys
 import requests
 
-from register import *
-from communicator import Communicator
+from proxy.register import *
+from proxy.communicator import Communicator
 from utils import AppError
 import logging.config
 import thread

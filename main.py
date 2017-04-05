@@ -6,28 +6,25 @@ from multiprocessing import Process
 import os
 import sys
 import requests
-
-from register import *
-from communicator import Communicator
-from utils import AppError
 import logging
 import thread
-
-from server.homeserver import HomeServer
-
 from functools import wraps
 
 
-logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
+from proxy.register import *
+from proxy.communicator import Communicator
+from server.homeserver import HomeServer
+from utils import AppError
+import settings
+
+logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
 logger = logging.getLogger('proxylog')
 
-server_confs_file_name = "serverconf.json"
-
-if not register(server_confs_file_name):
+if not register():
     sys.exit()
 
-debug(True)
+debug(settings.DEBUG)
 
 def log_to_logger(fn):
     '''
@@ -388,11 +385,11 @@ def initialize_home_server(server_confs_file_name):
 
 
 ####### Initialize Home Server ########
-home_server_proc = Process(target=initialize_home_server, args=(server_confs_file_name,))
+home_server_proc = Process(target=initialize_home_server, args=(settings.SERVER_CONFIG_FILE,))
 
 
 home_server_proc.start()
-run(proxy, host=utils.get_my_ip(), port=8080, quiet=True)
+run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
 
 
 home_server_proc.join()

@@ -8,20 +8,22 @@ import re
 import utils
 import logging
 
+import settings
+
 logger = logging.getLogger('proxylog')
 
-def register(server_config_file_name):
+def register():
     try:
-        f = open(server_config_file_name, "r")
+        f = open(settings.SERVER_CONFIG_FILE, "r")
         confs = json.load(f)
         f.close()
-        if registerFromFile(server_config_file_name ,confs):
+        if registerFromFile(confs):
             return get_core_configs()
     except:
-        if registerFromScratch(server_config_file_name):
+        if registerFromScratch():
             return get_core_configs()
 
-def registerFromFile(server_config_file_name, confs):
+def registerFromFile(confs):
     data = {}
     data["address"] = confs["address"]
     data["name"] = confs["name"]
@@ -54,7 +56,7 @@ def registerFromFile(server_config_file_name, confs):
         return False
 
     if resp.status_code == 200:
-        f = open(server_config_file_name, "w")
+        f = open(settings.SERVER_CONFIG_FILE, "w")
         js = json.loads(resp.text)
         js["email"] = email
         js["password"] = password
@@ -72,7 +74,7 @@ def registerFromFile(server_config_file_name, confs):
             return False
 
         if resp.status_code == 201:
-            f = open(server_config_file_name, "w")
+            f = open(settings.SERVER_CONFIG_FILE, "w")
             js = json.loads(resp.text)
             js["email"] = email
             js["password"] = password
@@ -95,7 +97,7 @@ def registerFromFile(server_config_file_name, confs):
             logger.error("If you prefer you can delete that file to register from scratch.")
             return False
 
-def registerFromScratch(server_config_file_name):
+def registerFromScratch():
 
     print "\nStarting Server Configuration from Scratch\n" 
 
@@ -172,7 +174,7 @@ def registerFromScratch(server_config_file_name):
         if resp.status_code == 201:
             print 'Server Registed Successfully'
             try:
-                f = open(server_config_file_name, "w")
+                f = open(settings.SERVER_CONFIG_FILE, "w")
                 js = json.loads(resp.text)
                 js["email"] = email
                 js["password"] = password
@@ -218,7 +220,7 @@ def get_core_configs():
 
     try:
         logger.info("Getting core configs (device_types)")
-        device_types_file = open("device_types.json", "w")
+        device_types_file = open(settings.DEVICE_TYPES_CONFIG_FILE, "w")
         data = {}
         data["DEVICE_TYPES"] = js["device_types"]
         json.dump(data, device_types_file)
@@ -229,7 +231,7 @@ def get_core_configs():
 
     try:
         logger.info("Getting core configs (value_types)")
-        value_types_file = open("value_types.json", "w")
+        value_types_file = open(settings.VALUE_TYPES_CONFIG_FILE, "w")
         data = {}
         data["SCALAR_TYPES"] = js["value_types"]["scalars"]
         data["ENUM_TYPES"] = js["value_types"]["enums"]
@@ -250,7 +252,7 @@ def get_core_configs():
 
     try:
         logger.info("Getting core configs (property_types)")
-        property_types_file = open("property_types.json", "w")
+        property_types_file = open(settings.PROPERTY_TYPES_CONFIG_FILE, "w")
         data = {}
         data["PROPERTY_TYPES"] = js["property_types"]
         json.dump(data, property_types_file)

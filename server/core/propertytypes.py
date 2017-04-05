@@ -3,7 +3,7 @@
 import json
 
 import valuetypes
-
+import settings
 import logging.config
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def add_property(new_property):
     PROPERTY_TYPES[str(new_property.id)] = new_property
 
 try:
-    f = open("property_types.json", "r")  
+    f = open(settings.PROPERTY_TYPES_CONFIG_FILE, "r")  
 
     file = json.load(f)
     logger.info("Loading properties.json file...")

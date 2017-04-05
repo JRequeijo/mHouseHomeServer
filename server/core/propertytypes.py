@@ -4,6 +4,8 @@ import json
 
 import valuetypes
 
+import logging.config
+logger = logging.getLogger(__name__)
 
 class PropertyType:
     def __init__(self, property_type_id, name, accessmode, valuetype_class, valuetype_id, fromfile=False):
@@ -45,7 +47,7 @@ try:
     f = open("property_types.json", "r")  
 
     file = json.load(f)
-    print "Loading properties.json file..."
+    logger.info("Loading properties.json file...")
 
     for ele in file["PROPERTY_TYPES"]:
         id = ele["id"]
@@ -58,4 +60,4 @@ try:
 
     f.close()
 except:
-    print "FILE: 'properties.json' not found"
+    logger.info("FILE: 'properties.json' not found")

@@ -5,6 +5,10 @@ from coapthon.server.coap import CoAP
 from server.idgenerator import IDGenerator
 from server.homeserverinfo import HomeServerInfo
 from server.devices import DevicesList
+import logging.config
+
+logger = logging.getLogger(__name__)
+
 
 class HomeServer(CoAP):
     def __init__(self, server_id, name, address, areas=[]):
@@ -19,7 +23,7 @@ class HomeServer(CoAP):
         self.port = 5683
         self.multicast = False
 
-
+        logger.info("Starting Home Server...")
         CoAP.__init__(self, (self.coapaddress, self.port), self.multicast)
 
         self.info = HomeServerInfo(self)
@@ -27,18 +31,17 @@ class HomeServer(CoAP):
         self.devices = DevicesList(self)
         self.id_gen = IDGenerator(self)
 
-        print "CoAP Server start on " + self.address + ":" + str(self.port)
-        print self.root.dump()
+        logger.info("CoAP Server start on " + self.address + ":" + str(self.port))
+        logger.info(self.root.dump())
 
     def start(self):
         try:
+            logger.info("Home Server Started...")
             self.listen(10)
         except KeyboardInterrupt:
-            print "Server Shutdown"
-            self.close()
-            print "Exiting..."
+            self.shutdown()
 
     def shutdown(self):
-        print "Shutting down server"
+        logger.info("Shutting down server")
         self.close()
-        print "Server down"
+        logger.info("Server is down")

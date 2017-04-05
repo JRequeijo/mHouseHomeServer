@@ -6,6 +6,9 @@ import sys
 import getpass
 import re
 import utils
+import logging
+
+logger = logging.getLogger('proxylog')
 
 def register(server_config_file_name):
     try:
@@ -36,7 +39,7 @@ def registerFromFile(server_config_file_name, confs):
         resp = client.get(login_url)  # sets cookie
         csrftoken = resp.cookies['csrftoken']
     except:
-        print "ERROR: You don't have connection to the internet or the main server is down"
+        logger.error("You don't have connection to the internet or the main server is down")
         return False
 
     headers = {'Accept':'application/json',
@@ -47,7 +50,7 @@ def registerFromFile(server_config_file_name, confs):
         resp = client.get(server_regist_url+str(confs["id"])+"/", 
                                 headers=headers, auth=(email, password))
     except:
-        print "ERROR: You don't have connection to the internet or the main server is down"
+        logger.error("You don't have connection to the internet or the main server is down")
         return False
 
     if resp.status_code == 200:
@@ -57,7 +60,7 @@ def registerFromFile(server_config_file_name, confs):
         js["password"] = password
         json.dump(js, f)
         f.close()
-        print 'Server Info Retrieved Successfully'
+        logger.info('Server Info Retrieved Successfully')
         return True
     else:
         try:
@@ -65,7 +68,7 @@ def registerFromFile(server_config_file_name, confs):
                             data=json.dumps(data), 
                             headers=headers, auth=(email, password))
         except:
-            print "ERROR: You don't have connection to the internet or the main server is down"
+            logger.error("You don't have connection to the internet or the main server is down")
             return False
 
         if resp.status_code == 201:
@@ -75,21 +78,21 @@ def registerFromFile(server_config_file_name, confs):
             js["password"] = password
             json.dump(js, f)
             f.close()
-            print 'Server Registed Successfully'
+            logger.info('Server Registed Successfully')
             return True
         else:
             js = json.loads(resp.text)
             if "address" in js.keys():
-                print "ERROR ("+ str(resp.status_code)+"): "+str(js["address"][0])
+                logger.error("Error ("+ str(resp.status_code)+"): "+str(js["address"][0]))
 
             if "name" in js.keys():
-                print "ERROR ("+ str(resp.status_code)+"): "+str(js["name"][0])
+                logger.error("Error ("+ str(resp.status_code)+"): "+str(js["name"][0]))
 
             if "detail" in js.keys():
-                print "ERROR ("+ str(resp.status_code)+"): "+str(js["detail"][0])
+                logger.error("Error ("+ str(resp.status_code)+"): "+str(js["detail"][0]))
 
-            print "Please check if data on 'serverconf.json' file is correct."
-            print "If you prefer you can delete that file to register from scratch."
+            logger.error("Please check if data on 'serverconf.json' file is correct.")
+            logger.error("If you prefer you can delete that file to register from scratch.")
             return False
 
 def registerFromScratch(server_config_file_name):
@@ -214,18 +217,18 @@ def get_core_configs():
         return False
 
     try:
-        print "Getting core configs (device_types)"
+        logger.info("Getting core configs (device_types)")
         device_types_file = open("device_types.json", "w")
         data = {}
         data["DEVICE_TYPES"] = js["device_types"]
         json.dump(data, device_types_file)
         device_types_file.close()
     except:
-        print "ERROR: Couldn't open/create device_types.json file"
+        logger.error("Couldn't open/create device_types.json file")
         return False
 
     try:
-        print "Getting core configs (value_types)"
+        logger.info("Getting core configs (value_types)")
         value_types_file = open("value_types.json", "w")
         data = {}
         data["SCALAR_TYPES"] = js["value_types"]["scalars"]
@@ -242,18 +245,18 @@ def get_core_configs():
         json.dump(data, value_types_file)
         value_types_file.close()
     except:
-        print "ERROR: Couldn't open/create value_types.json file"
+        logger.error("Couldn't open/create value_types.json file")
         return False
 
     try:
-        print "Getting core configs (property_types)"
+        logger.info("Getting core configs (property_types)")
         property_types_file = open("property_types.json", "w")
         data = {}
         data["PROPERTY_TYPES"] = js["property_types"]
         json.dump(data, property_types_file)
         property_types_file.close()
     except:
-        print "ERROR: Couldn't open/create property_types.json file"
+        logger.error("Couldn't open/create property_types.json file")
         return False
     
     return True

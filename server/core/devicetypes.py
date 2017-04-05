@@ -3,7 +3,10 @@
 import json
 
 from propertytypes import PROPERTY_TYPES
+import logging
 
+
+logger = logging.getLogger(__name__)
 
 class DeviceType:
     def __init__(self, devicetype_id, name, properties=[]):
@@ -55,7 +58,7 @@ try:
     f = open("device_types.json", "r")
 
     file = json.load(f)
-    print "Loading devicetypes.json File..."
+    logger.info("Loading devicetypes.json File...")
     for ele in file["DEVICE_TYPES"]:
         id = ele["id"]
         name = ele["name"]
@@ -64,4 +67,4 @@ try:
         DEVICE_TYPES[int(id)] = DeviceType(id, name, properties)
     f.close()
 except:
-    print "FILE: 'devicetypes.json' not found"
+    logger.info("FILE: 'devicetypes.json' not found")

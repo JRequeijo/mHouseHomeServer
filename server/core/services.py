@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import json
+import logging.config
+logger = logging.getLogger(__name__)
 
 class Service:    
     def __init__(self, service_id, name):
@@ -29,7 +31,7 @@ try:
     f = open("services.json", "r")
 
     file = json.load(f)
-    print "Loading services.json file..."
+    logger.info("Loading services.json file...")
 
     for ele in file["SERVICES"]:
         id = ele["id"]
@@ -39,4 +41,4 @@ try:
 
     f.close()
 except:
-    print "FILE: 'services.json' not found"
+    logger.info("FILE: 'services.json' not found")

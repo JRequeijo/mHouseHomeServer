@@ -5,6 +5,7 @@ from utils import AppError
 
 class Communicator: 
     def __init__(self, host, port=5683):
+        
         self.host = host
         self.port = port
         self.client = None

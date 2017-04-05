@@ -6,6 +6,9 @@ from coapthon.resources.resource import Resource
 
 from utils import status, error
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class HomeServerInfo(Resource):
     def __init__(self, server):
@@ -43,7 +46,7 @@ class HomeServerInfo(Resource):
             try:
                 body = json.loads(request.payload)
             except:
-                print "ERROR: Request payload not json"
+                logger.error("Request payload not json")
                 return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")           
 
             try:

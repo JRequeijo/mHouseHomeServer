@@ -1,5 +1,8 @@
 import json
 
+import logging.config
+logger = logging.getLogger(__name__)
+
 # class valuetypes:
 SCALAR = "SCALAR"
 ENUM = "ENUM"
@@ -87,7 +90,7 @@ try:
     f = open("value_types.json", "r")
 
     file = json.load(f)
-    print "Loading valuetypes.json file..."
+    logger.info("Loading valuetypes.json file...")
 
     for ele in file["SCALAR_TYPES"]:
         id = ele["id"]
@@ -118,5 +121,5 @@ try:
 
     f.close()
 except Exception as e:
-    print "FILE: " + e.message
+    logger.info("FILE: " + e.message)
 

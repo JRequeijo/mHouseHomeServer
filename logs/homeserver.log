@@ -1,0 +1,15 @@
+2017-04-05 23:45:58,489 - MainThread - server.homeserver - INFO - Starting Home Server...
+2017-04-05 23:45:58,493 - MainThread - server.homeserver - INFO - CoAP Server start on 192.168.1.67:5683
+2017-04-05 23:45:58,493 - MainThread - server.homeserver - INFO - ['/devices', '/info', '/']
+2017-04-05 23:45:58,493 - MainThread - server.homeserver - INFO - Home Server Started...
+2017-04-05 23:46:11,188 - MainThread - coapthon.server.coap - DEBUG - receive_datagram - From ('192.168.1.67', 60951), To None, CON-44036, GET-None, [Uri-Path: info, ] No payload
+2017-04-05 23:46:11,195 - Thread-2   - coapthon.server.coap - DEBUG - send_datagram - From None, To ('192.168.1.67', 60951), ACK-44036, CONTENT-None, [Content-Type: 50, ] {"server_id": 2, "na...63 bytes
+2017-04-05 23:49:17,414 - MainThread - coapthon.server.coap - DEBUG - receive_datagram - From ('192.168.1.67', 64206), To None, CON-16907, GET-None, [Uri-Path: devices, ] No payload
+2017-04-05 23:49:17,415 - Thread-4   - coapthon.server.coap - DEBUG - send_datagram - From None, To ('192.168.1.67', 64206), ACK-16907, CONTENT-None, [Content-Type: 50, ] {"devices": []}...15 bytes
+2017-04-05 23:49:24,814 - MainThread - coapthon.server.coap - DEBUG - receive_datagram - From ('192.168.1.67', 59671), To None, CON-15001, POST-WO, [Uri-Path: devices, Content-Type: 50, ] {"services": [], "de...91 bytes
+2017-04-05 23:49:24,816 - Thread-6   - coapthon.server.coap - DEBUG - send_datagram - From None, To ('192.168.1.67', 59671), ACK-15001, CREATED-WO, [Content-Type: 50, ] {"devices": [{"name"...128 bytes
+2017-04-05 23:50:51,854 - MainThread - coapthon.server.coap - DEBUG - receive_datagram - From ('192.168.1.67', 57397), To None, CON-52228, GET-None, [Uri-Path: devices, ] No payload
+2017-04-05 23:50:51,855 - Thread-9   - coapthon.server.coap - DEBUG - send_datagram - From None, To ('192.168.1.67', 57397), ACK-52228, CONTENT-None, [Content-Type: 50, ] {"devices": [{"name"...125 bytes
+2017-04-05 23:58:51,161 - MainThread - server.homeserver - INFO - Shutting down server
+2017-04-05 23:58:51,161 - MainThread - coapthon.server.coap - INFO - Stop server
+2017-04-05 23:58:51,162 - MainThread - server.homeserver - INFO - Server is down

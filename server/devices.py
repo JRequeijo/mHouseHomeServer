@@ -15,6 +15,10 @@ import requests
 
 import thread
 import os.path
+import logging
+
+logger = logging.getLogger(__name__)
+
 def regist_device_on_cloud(device):
     # try:
 
@@ -177,7 +181,7 @@ class Device(Resource):
             try:
                 body = json.loads(request.payload)
             except:
-                print "ERROR: Request payload not json"
+                logger.error("Request payload not json")
                 return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
 
             try:
@@ -287,7 +291,6 @@ class DevicesList(Resource):
 
         for d in self.devices.values():
             if d.address == device_address:
-                # print "FOUND"
                 return d.id
         return None
 
@@ -300,7 +303,7 @@ class DevicesList(Resource):
             try:
                 body = json.loads(request.payload)
             except:
-                print "ERROR: Request payload not json"
+                logger.error("Request payload not json")
                 return error(defines.Codes.BAD_REQUEST, "Body content not properly json formated")
             try:
                 check_on_body(body, ["name", "address", "device_type", "services"])
@@ -313,10 +316,10 @@ class DevicesList(Resource):
                 return status(defines.Codes.CREATED, self.payload)
 
             except AppError as err:
-                print "ERROR: "+err.msg
+                logger.error("ERROR: "+err.msg)
                 return error(err.code, err.msg)
             except AppHTTPError as err:
-                print "ERROR: "+err.msg
+                logger.error("ERROR: "+err.msg)
                 return error(err.code, err.msg)
         else:
             return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
@@ -371,8 +374,6 @@ class DeviceState(Resource):
         for p in properties:
             keys.append(str(p.id))
             keys.append(str(p.name))
-
-        # print keys
 
         for p in new_state.keys():
             if not str(p) in keys:
@@ -436,7 +437,7 @@ class DeviceState(Resource):
             try:
                 body = json.loads(request.payload)
             except:
-                print "ERROR: Request payload not json"
+                logger.error("Request payload not json")
                 return error(defines.Codes.BAD_REQUEST,\
                             "Request payload not properly formated json")
 

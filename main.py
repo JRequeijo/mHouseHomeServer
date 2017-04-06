@@ -1,4 +1,3 @@
-
 from bottle import Bottle, run, request, response, abort, debug
 import json
 from coapthon import defines
@@ -35,10 +34,8 @@ def log_to_logger(fn):
     def _log_to_logger(*args, **kwargs):
         actual_response = fn(*args, **kwargs)
         # modify this to log exactly what you need:
-        logger.info('From: %s - %s %s %s' % (request.remote_addr,
-                                        request.method,
-                                        request.url,
-                                        response.status))
+        logger.info('From: %s - %s %s %s' % (request.remote_addr, request.method, request.url,\
+                                                response.status))
         return actual_response
     return _log_to_logger
 
@@ -47,9 +44,7 @@ proxy = Bottle()
 proxy.install(log_to_logger)
 # backup = BackupSaver("housebackup.json", house)
 
-
-
-comm = Communicator("192.168.1.67")
+comm = Communicator(settings.COAP_ADDR, settings.COAP_PORT)
 
 def save_server_confs(new_name):
     try:
@@ -71,7 +66,7 @@ def save_server_confs(new_name):
 @proxy.get('/info')
 def get_info():
     try:
-        resp = comm.get("/info", timeout=2)
+        resp = comm.get("/info", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
 
@@ -96,7 +91,7 @@ def actualize_info():
                 data = {}
                 data["name"] = body["name"]
 
-                resp = comm.put("/info", json.dumps(data), timeout=2)
+                resp = comm.put("/info", json.dumps(data), timeout=settings.COMM_TIMEOUT)
                 resp = comm.get_response(resp)
 
                 err_check = check_error_response(resp)
@@ -119,7 +114,7 @@ def actualize_info():
 @proxy.get("/devices")
 def get_all_devices():
     try: 
-        resp = comm.get("/devices", timeout=2)
+        resp = comm.get("/devices", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
@@ -140,7 +135,7 @@ def regist_device():
 
         if body is not None:
             try:
-                resp = comm.post("/devices", json.dumps(body), timeout=2)
+                resp = comm.post("/devices", json.dumps(body), timeout=settings.COMM_TIMEOUT)
             except AppError as err:
                 abort(504, err.msg)
             resp = comm.get_response(resp)
@@ -161,7 +156,7 @@ def regist_device():
 @proxy.get("/devices/<device_id:int>")
 def get_device(device_id):
     try:
-        resp = comm.get("/devices/"+str(device_id), timeout=2)
+        resp = comm.get("/devices/"+str(device_id), timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
@@ -175,7 +170,7 @@ def get_device(device_id):
 @proxy.delete("/devices/<device_id:int>")
 def unregist_device(device_id):
     try:
-        resp = comm.delete("/devices/"+str(device_id), timeout=2)
+        resp = comm.delete("/devices/"+str(device_id), timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
@@ -199,7 +194,7 @@ def actualize_device_info(device_id):
                 data = {}
                 data["name"] = body["name"]
 
-                resp = comm.put("/devices/"+str(device_id), json.dumps(data), timeout=2)
+                resp = comm.put("/devices/"+str(device_id), json.dumps(data), timeout=settings.COMM_TIMEOUT)
                 resp = comm.get_response(resp)
 
                 err_check = check_error_response(resp)
@@ -218,7 +213,7 @@ def actualize_device_info(device_id):
 @proxy.get("/devices/<device_id:int>/state")
 def get_device_state(device_id):
     try:
-        resp = comm.get("/devices/"+str(device_id)+"/state", timeout=2)
+        resp = comm.get("/devices/"+str(device_id)+"/state", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
@@ -239,7 +234,7 @@ def change_device_state(device_id):
 
         if body is not None:
             try:
-                resp = comm.put("/devices/"+str(device_id)+"/state", json.dumps(body), timeout=2)
+                resp = comm.put("/devices/"+str(device_id)+"/state", json.dumps(body), timeout=settings.COMM_TIMEOUT)
             except AppError as err:
                 abort(504, err.msg)
             resp = comm.get_response(resp)
@@ -259,7 +254,7 @@ def change_device_state(device_id):
 @proxy.get("/devices/<device_id:int>/type")
 def get_device_type(device_id):
     try:
-        resp = comm.get("/devices/"+str(device_id)+"/type", timeout=2)
+        resp = comm.get("/devices/"+str(device_id)+"/type", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
@@ -275,7 +270,7 @@ def get_device_type(device_id):
 @proxy.get("/devices/<device_id:int>/services")
 def get_device_services(device_id):
     try:
-        resp = comm.get("/devices/"+str(device_id)+"/services", timeout=2)
+        resp = comm.get("/devices/"+str(device_id)+"/services", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
@@ -386,11 +381,8 @@ def initialize_home_server(server_confs_file_name):
 
 ####### Initialize Home Server ########
 home_server_proc = Process(target=initialize_home_server, args=(settings.SERVER_CONFIG_FILE,))
-
-
 home_server_proc.start()
 run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
-
 
 home_server_proc.join()
 

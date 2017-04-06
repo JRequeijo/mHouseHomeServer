@@ -5,6 +5,8 @@ import json
 from coapthon import defines
 from coapthon.resources.resource import Resource
 
+import settings
+
 from utils import *
 from core.devicetypes import DEVICE_TYPES, validate_device_type
 from core.services import SERVICES, validate_services
@@ -19,88 +21,112 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def regist_device_on_cloud(device):
-    # try:
+def get_server_configs():
+    try:    
+        f = open(os.path.dirname(__file__) + "../"+settings.SERVER_CONFIG_FILE, "r")
+        file_data = json.load(f)
 
-    f = open(os.path.dirname(__file__) + '/../serverconf.json', "r")
-    file_data = json.load(f)
+        check_on_body(file_data, ['email', 'password', 'id'])
 
-    email = file_data['email']
-    password = file_data['password']
-    server_id = file_data['id']
-
-    resp = requests.get("http://127.0.0.1:8000/login/")
-    csrftoken = resp.cookies['csrftoken']
-
-    headers = {'Accept':'application/json',\
-            'Content-Type':'application/json',\
-            'X-CSRFToken':csrftoken}
-
-    resp = requests.get("http://127.0.0.1:8000/devices/",\
-                    headers=headers,\
-                    auth=(email, password))
-    regist_done = False
-    if resp.status_code == 200:
-        js = json.loads(resp.text)
-        for ele in js:
-            if ele['address'] == device.address:
-                device.universal_id = ele['id']
-                resp = requests.patch("http://127.0.0.1:8000/devices/"+str(ele['id'])+"/",\
-                                        data=device.get_json(),\
-                                        headers=headers,\
-                                        auth=(email, password))
-                print resp.text
-                regist_done = True
-                break
-
-        if not regist_done:
-
-            data = device.get_info()
-            data['server'] = server_id
-
-            resp = requests.post("http://127.0.0.1:8000/devices/", data=json.dumps(data),\
-                            headers=headers,\
-                            auth=(email, password))
-
-            if resp.status_code == 200:
-                js = json.loads(resp.text)
-                for ele in js:
-                    if ele['address'] == device.address:
-                        device.universal_id = ele['id']
-            elif resp.status_code == 400:
-                js = json.loads(resp.text)
-                try:
-                    errs = js['non_field_errors']
-                    for ele in errs:
-                        if 'address' in ele:
-                            # resp = requests.patch("http://127.0.0.1:8000/devices/", data=json.dumps(data),\
-                            #         headers=headers,\
-                            #         auth=(email, password))
-                            print "Problems with address"
-                except:
-                    print "ERROR DUMMMMM"
-
-    # except:
-    #     print "ERRO DUMMY"
-
-def unregist_device_from_cloud(device_id):
-    try:
-        resp = requests.get("http://127.0.0.1:8000/login/")
-
-        csrftoken = resp.cookies['csrftoken']
-        headers = {'Accept':'application/json',\
-                'Content-Type':'application/json',\
-                'X-CSRFToken':csrftoken}
-
-        resp = requests.delete("http://127.0.0.1:8000/devices/"+str(device_id),\
-                        headers=headers,\
-                        auth=("josediogo_rd@hotmail.com", "petrucci1"))
-
-        print resp.text
+        return file_data
     except:
-        print "ERRO DUMMY2"
+        logger.error("Server Configuration File Not Found or improperly configured")
+        return False
 
+### REVER ISTO MUITO BEM
+def regist_device_on_cloud(device):
 
+    data = get_server_configs()
+    if data:
+        email = data['email']
+        password = data['password']
+        server_id = data['id']
+    else:
+        return data
+
+    with requests.Session as client:
+        try:
+            resp = client.head(settings.CLOUD_BASE_URL+"login/")
+            csrftoken = resp.cookies['csrftoken']
+
+            client.headers.update({'Accept':'application/json',\
+                    'Content-Type':'application/json',\
+                    'X-CSRFToken':csrftoken})
+            client.auth = (email, password)
+
+            try:
+                resp = client.get(settings.CLOUD_BASE_URL+"devices/")
+                regist_done = False
+                if resp.status_code == 200:
+                    js = json.loads(resp.text)
+                    for ele in js:
+                        if ele['address'] == device.address:
+                            device.universal_id = ele['id']
+                            try:
+                                resp = client.patch(settings.CLOUD_BASE_URL+"devices/"\
+                                                        +str(ele['id'])+"/", data=device.get_json())
+                                regist_done = True
+                                break
+                            except:
+                                raise AppError(503)
+
+                    if not regist_done:
+                        data = device.get_info()
+                        data['server'] = server_id
+
+                        try:
+                            resp = client.post(settings.CLOUD_BASE_URL+"devices/",\
+                                                    data=json.dumps(data))
+
+                            if resp.status_code == 200:
+                                js = json.loads(resp.text)
+                                for ele in js:
+                                    if ele['address'] == device.address:
+                                        device.universal_id = ele['id']
+                            elif resp.status_code == 400:
+                                js = json.loads(resp.text)
+                                try:
+                                    errs = js['non_field_errors']
+                                    for ele in errs:
+                                        if 'address' in ele:
+                                            logger.error("Problems with address")
+                                except:
+                                    logger.error("ERROR DUMMMM")
+                        except:
+                            AppError(503)
+            except:
+                raise AppError(503)
+        except AppError:
+            logger.error("You do not have connection to the internet or the cloud server is down")
+
+### REVER ISTO MUITO BEM
+def unregist_device_from_cloud(device_id):
+
+    data = get_server_configs()
+    if data:
+        email = data['email']
+        password = data['password']
+        server_id = data['id']
+    else:
+        return data
+
+    with requests.Session as client:
+        try:
+            resp = client.head(settings.CLOUD_BASE_URL+"login/")
+            csrftoken = resp.cookies['csrftoken']
+
+            client.headers.update({'Accept':'application/json',\
+                    'Content-Type':'application/json',\
+                    'X-CSRFToken':csrftoken})
+            client.auth = (email, password)
+
+            resp = client.delete(settings.CLOUD_BASE_URL+"devices/"+str(device_id))
+        except:
+            logger.error("You do not have connection to the internet or the cloud server is down")
+
+#
+########################################################################################
+### Device Resource
 class Device(Resource):
     def __init__(self, devices_list, device_id, name="", address="", type_id=0, services=[]):
 
@@ -171,7 +197,7 @@ class Device(Resource):
         del self.server.root[self.root_uri]
         return True
 
-
+    ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
         return self
@@ -208,6 +234,7 @@ class Device(Resource):
 
         return True
 
+## Devices List Resource
 class DevicesList(Resource):
     def __init__(self, server, devices=[]):
 
@@ -293,7 +320,8 @@ class DevicesList(Resource):
             if d.address == device_address:
                 return d.id
         return None
-
+    
+    ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
         return self
@@ -325,7 +353,7 @@ class DevicesList(Resource):
             return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                                     "Content must be application/json")
 
-
+## Device State Resource
 class DeviceState(Resource):
     def __init__(self, device):
 
@@ -460,6 +488,7 @@ class DeviceState(Resource):
             return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                         "Request content must be application/json")
 
+## Device Type Resource
 class DeviceTypeResource(Resource):
     def __init__(self, device):
 
@@ -495,11 +524,12 @@ class DeviceTypeResource(Resource):
     def delete(self):
         del self.device.server.root[self.root_uri]
         return True
-
+    
+    ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
         return self
- 
+## Device Services Resource
 class DeviceServicesResource(Resource):
     def __init__(self, device):
 
@@ -539,7 +569,8 @@ class DeviceServicesResource(Resource):
     def delete(self):
         del self.device.server.root[self.root_uri]
         return True
-
+    
+    ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
         return self

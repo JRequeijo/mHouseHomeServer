@@ -20,5 +20,14 @@ QUIET = True
 PROXY_ADDR = utils.get_my_ip()
 PROXY_PORT = 8080
 
+## CoAP Server IP Address and Port
+COAP_ADDR = "192.168.1.67"    # "224.0.1.187"
+COAP_PORT = 5683
+COAP_MULTICAST = False
+
+
 ## Communicator Default Timeout
 COMM_TIMEOUT = 2
+
+## Online Platform base URL
+CLOUD_BASE_URL = "http://127.0.0.1:8000/"

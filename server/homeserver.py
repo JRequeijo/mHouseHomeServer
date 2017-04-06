@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from coapthon.server.coap import CoAP
 
+import settings
 
 from server.idgenerator import IDGenerator
 from server.homeserverinfo import HomeServerInfo
@@ -18,10 +19,9 @@ class HomeServer(CoAP):
 
         self.address = address
 
-        #self.coapaddress = "224.0.1.187"
-        self.coapaddress = "192.168.1.67"
-        self.port = 5683
-        self.multicast = False
+        self.coapaddress = settings.COAP_ADDR
+        self.port = settings.COAP_PORT
+        self.multicast = settings.COAP_MULTICAST
 
         logger.info("Starting Home Server...")
         CoAP.__init__(self, (self.coapaddress, self.port), self.multicast)

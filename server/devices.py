@@ -359,7 +359,7 @@ class DeviceState(Resource):
 
         # initialize CoAP Resource
         super(DeviceState, self).__init__("DeviceState", device.server, visible=True,\
-                                            observable=False, allow_children=False)
+                                            observable=True, allow_children=False)
 
         #### Device Data ####
         self.device = device
@@ -477,7 +477,8 @@ class DeviceState(Resource):
                             "Content must be a json dictionary")
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self.payload)
+                # return status(defines.Codes.CHANGED, self.payload)
+                return self
 
             except AppError as err:
                 return error(err.code, err.msg)

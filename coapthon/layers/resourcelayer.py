@@ -517,6 +517,7 @@ class ResourceLayer(object):
         if resource.max_age is not None:
             transaction.response.max_age = resource.max_age
 
+        resource.changed = False
         transaction.resource = resource
 
         return transaction

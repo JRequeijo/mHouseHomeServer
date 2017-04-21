@@ -19,10 +19,12 @@ from coapthon.resources.resource import Resource
 from coapthon.serializer import Serializer
 from coapthon.utils import Tree, create_logging
 
+
+from server.devices import DeviceState
+
 __author__ = 'Giacomo Tanganelli'
 
 logger = logging.getLogger(__name__)
-
 
 class CoAP(object):
     """
@@ -213,8 +215,18 @@ class CoAP(object):
             self._requestLayer.receive_request(transaction)
 
             if transaction.resource is not None and transaction.resource.changed:
-                self.notify(transaction.resource)
-                transaction.resource.changed = False
+                if isinstance(transaction.resource, DeviceState):
+                    print "\nSource: " + transaction.request.source[0] + "\n"
+                    print "\nResAddr: " + transaction.resource.device.address + "\n"
+                    if transaction.request.source[0] != transaction.resource.device.address:
+                        self.notify_owner(transaction.resource)
+                        transaction.resource.changed = False
+                    else:
+                        self.notify_others(transaction.resource)
+                        transaction.resource.changed = False
+                else:
+                    self.notify(transaction.resource)
+                    transaction.resource.changed = False
             elif transaction.resource is not None and transaction.resource.deleted:
                 self.notify(transaction.resource)
                 transaction.resource.deleted = False
@@ -372,6 +384,7 @@ class CoAP(object):
         observers = self._observeLayer.notify(resource)
         logger.debug("Notify")
         for transaction in observers:
+            logger.debug("Notifying: "+transaction.request.source[0])
             with transaction:
                 transaction.response = None
                 transaction = self._requestLayer.receive_request(transaction)
@@ -383,3 +396,50 @@ class CoAP(object):
                         self._start_retransmission(transaction, transaction.response)
 
                     self.send_datagram(transaction.response)
+    
+    def notify_owner(self, resource):
+        """
+        Notifies the observers of a certain resource.
+
+        :param resource: the resource
+        """
+        observers = self._observeLayer.notify(resource)
+        logger.debug("Notifying Owner")
+        for transaction in observers:
+            if transaction.request.source[0] == resource.device.address:
+                logger.debug("Notifying: "+transaction.request.source[0])
+                with transaction:
+                    transaction.response = None
+                    transaction = self._requestLayer.receive_request(transaction)
+                    transaction = self._observeLayer.send_response(transaction)
+                    transaction = self._blockLayer.send_response(transaction)
+                    transaction = self._messageLayer.send_response(transaction)
+                    if transaction.response is not None:
+                        if transaction.response.type == defines.Types["CON"]:
+                            self._start_retransmission(transaction, transaction.response)
+
+                        self.send_datagram(transaction.response)
+                        break
+
+    def notify_others(self, resource):
+        """
+        Notifies the observers of a certain resource.
+
+        :param resource: the resource
+        """
+        observers = self._observeLayer.notify(resource)
+        logger.debug("Notifying Others")
+        for transaction in observers:
+            if transaction.request.source[0] != resource.device.address:
+                logger.debug("Notifying: "+transaction.request.source[0])
+                with transaction:
+                    transaction.response = None
+                    transaction = self._requestLayer.receive_request(transaction)
+                    transaction = self._observeLayer.send_response(transaction)
+                    transaction = self._blockLayer.send_response(transaction)
+                    transaction = self._messageLayer.send_response(transaction)
+                    if transaction.response is not None:
+                        if transaction.response.type == defines.Types["CON"]:
+                            self._start_retransmission(transaction, transaction.response)
+
+                        self.send_datagram(transaction.response)

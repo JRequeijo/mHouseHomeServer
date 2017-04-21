@@ -20,7 +20,8 @@ from coapthon.serializer import Serializer
 from coapthon.utils import Tree, create_logging
 
 
-from server.devices import DeviceState
+from server.devices import *
+import time
 
 __author__ = 'Giacomo Tanganelli'
 
@@ -128,6 +129,9 @@ class CoAP(object):
 
         :param timeout: Socket Timeout in seconds
         """
+        mon_t = threading.Thread(target=self.monitoring_devices, args=(10,))
+        mon_t.start()
+
         self._socket.settimeout(float(timeout))
         while not self.stopped.isSet():
             try:
@@ -175,9 +179,19 @@ class CoAP(object):
                         with transaction:
                             self._blockLayer.receive_empty(message, transaction)
                             self._observeLayer.receive_empty(message, transaction)
-
+                
             except RuntimeError:
                 print "Exception with Executor"
+
+            try:
+                now = time.time()
+                for key, d in self.root["/devices"].devices.iteritems():
+                    if d.address == client_address[0]:
+                        d.last_access = now
+            except Exception as e:
+                print e.message
+
+
         self._socket.close()
 
     def close(self):
@@ -216,8 +230,6 @@ class CoAP(object):
 
             if transaction.resource is not None and transaction.resource.changed:
                 if isinstance(transaction.resource, DeviceState):
-                    print "\nSource: " + transaction.request.source[0] + "\n"
-                    print "\nResAddr: " + transaction.resource.device.address + "\n"
                     if transaction.request.source[0] != transaction.resource.device.address:
                         self.notify_owner(transaction.resource)
                         transaction.resource.changed = False
@@ -227,6 +239,7 @@ class CoAP(object):
                 else:
                     self.notify(transaction.resource)
                     transaction.resource.changed = False
+
             elif transaction.resource is not None and transaction.resource.deleted:
                 self.notify(transaction.resource)
                 transaction.resource.deleted = False
@@ -443,3 +456,19 @@ class CoAP(object):
                             self._start_retransmission(transaction, transaction.response)
 
                         self.send_datagram(transaction.response)
+
+    def monitoring_devices(self, timeout):
+        while True:
+            try:
+                now = time.time()
+                del_marked = []
+                for key, d in self.root["/devices"].devices.iteritems():
+                    if (now-timeout) > d.last_access:
+                        logger.debug("Device ("+str(d.id)+") is down")
+                        del_marked.append(d)
+                        logger.debug("Device ("+str(d.id)+") marked for deletion")
+                for d in del_marked:
+                    d.delete()
+                    logger.debug("Device ("+str(d.id)+") Deleted")
+            except Exception as e:
+                print e.message

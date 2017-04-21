@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import time
 
 from coapthon import defines
 from coapthon.resources.resource import Resource
@@ -167,6 +168,9 @@ class Device(Resource):
 
         # services of the device
         self.services = DeviceServicesResource(self)
+
+
+        self.last_access = time.time()
 
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"

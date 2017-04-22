@@ -129,7 +129,7 @@ class CoAP(object):
 
         :param timeout: Socket Timeout in seconds
         """
-        mon_t = threading.Thread(target=self.monitoring_devices, args=(10,))
+        mon_t = threading.Thread(target=self.monitoring_devices, args=(15,))
         mon_t.start()
 
         self._socket.settimeout(float(timeout))

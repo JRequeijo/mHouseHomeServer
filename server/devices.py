@@ -129,7 +129,7 @@ def unregist_device_from_cloud(device_id):
 #
 
 def notify_cloud(device_state):
-
+    print "Notifying Cloud"
     data = get_server_configs()
     if data:
         email = data['email']
@@ -150,7 +150,7 @@ def notify_cloud(device_state):
 
         try:
             resp = client.patch(settings.CLOUD_BASE_URL+"devices/"+str(device_state.device.id)\
-                                +"/state/", data=device_state.get_json())
+                                +"/state/?fromserver=true", data=device_state.get_json())
             if resp.status_code == 200:
                 print "STATE CHANGED"
         except:
@@ -511,8 +511,10 @@ class DeviceState(Resource):
                 else:
                     raise AppError(defines.Codes.BAD_REQUEST,\
                             "Content must be a json dictionary")
-                
-                thread.start_new_thread(notify_cloud, (self,))
+                print self.device.address
+                print str(origin)
+                if self.device.address == str(origin):
+                    thread.start_new_thread(notify_cloud, (self,))
 
                 self.payload = self.get_payload()
                 # return status(defines.Codes.CHANGED, self.payload)

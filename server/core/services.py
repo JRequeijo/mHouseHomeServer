@@ -29,17 +29,17 @@ def validate_services(service_ids):
 #         SERVICES[str(new_service.id)] = new_service
 
 try:
-    f = open(settings.SERVICES_CONFIG_FILE, "r")
+    fp = open(str(settings.SERVICES_CONFIG_FILE), "r")
 
-    file = json.load(f)
-    logger.info("Loading services.json file...")
+    data = json.load(fp)
+    logger.info("Loading "+str(settings.SERVICES_CONFIG_FILE)+" file...")
 
-    for ele in file["SERVICES"]:
+    for ele in data["SERVICES"]:
         id = ele["id"]
         name = ele["name"]
 
         SERVICES[int(id)] = Service(id, name)
 
-    f.close()
+    fp.close()
 except:
-    logger.info("FILE: 'services.json' not found")
+    logger.info("FILE: "+str(settings.SERVICES_CONFIG_FILE)+" not found")

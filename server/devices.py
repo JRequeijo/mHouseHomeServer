@@ -250,11 +250,11 @@ class Device(Resource):
                 self.name = body["name"]
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self.payload)
+                return status(defines.Codes.CHANGED, self)
 
             except KeyError as err:
                 return error(defines.Codes.BAD_REQUEST,\
-                            "Field '"+str(err.message)+"' not found on request json body")
+                            "Field ("+str(err.message)+") not found on request json body")
         else:
             return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                             "Content must be application/json")
@@ -377,7 +377,7 @@ class DevicesList(Resource):
                 thread.start_new_thread(regist_device_on_cloud, (dev,))
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CREATED, self.payload)
+                return status(defines.Codes.CREATED, self)
 
             except AppError as err:
                 logger.error("ERROR: "+err.msg)
@@ -517,8 +517,8 @@ class DeviceState(Resource):
                     thread.start_new_thread(notify_cloud, (self,))
 
                 self.payload = self.get_payload()
-                # return status(defines.Codes.CHANGED, self.payload)
-                return self
+                return status(defines.Codes.CHANGED, self)
+                # return self
 
             except AppError as err:
                 return error(err.code, err.msg)
@@ -565,7 +565,7 @@ class DeviceTypeResource(Resource):
     def delete(self):
         del self.device.server.root[self.root_uri]
         return True
-    
+
     ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
@@ -610,7 +610,7 @@ class DeviceServicesResource(Resource):
     def delete(self):
         del self.device.server.root[self.root_uri]
         return True
-    
+
     ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
@@ -640,7 +640,7 @@ class DeviceServicesResource(Resource):
                              a json dictionary with only one service")
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self.payload)
+                return status(defines.Codes.CHANGED, self)
 
             except:
                 return error(defines.Codes.BAD_REQUEST,\
@@ -662,7 +662,7 @@ class DeviceServicesResource(Resource):
                             "Service with id ("+str(id)+") is not attributed for this device")
 
             self.payload = self.get_payload()
-            return status(defines.Codes.DELETED, self.payload)
+            return status(defines.Codes.DELETED, self)
         except:
             return error(defines.Codes.BAD_REQUEST,\
             "Request query must specify an id of the service to remove from the device services")

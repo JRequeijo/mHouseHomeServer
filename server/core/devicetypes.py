@@ -40,7 +40,7 @@ class DeviceType:
             ret.append(rep)
 
         return ret
-    
+
 DEVICE_TYPES = {0: DeviceType(0, "Empty Device", [])}
 
 def validate_device_type(type_id):
@@ -56,10 +56,10 @@ def validate_device_type(type_id):
 #     DEVICE_TYPES[str(new_type.id)] = new_type
 
 try:
-    f = open(settings.DEVICE_TYPES_CONFIG_FILE, "r")
+    f = open(str(settings.DEVICE_TYPES_CONFIG_FILE), "r")
 
     file = json.load(f)
-    logger.info("Loading devicetypes.json File...")
+    logger.info("Loading "+str(settings.DEVICE_TYPES_CONFIG_FILE)+" File...")
     for ele in file["DEVICE_TYPES"]:
         id = ele["id"]
         name = ele["name"]
@@ -68,4 +68,4 @@ try:
         DEVICE_TYPES[int(id)] = DeviceType(id, name, properties)
     f.close()
 except:
-    logger.info("FILE: 'devicetypes.json' not found")
+    logger.info("FILE: "+str(settings.DEVICE_TYPES_CONFIG_FILE)+" not found")

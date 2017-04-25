@@ -8,10 +8,11 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 class PropertyType:
-    def __init__(self, property_type_id, name, accessmode, valuetype_class, valuetype_id, fromfile=False):
+    def __init__(self, property_type_id, prop_type_name, accessmode,\
+                    valuetype_class, valuetype_id):
 
         self.id = property_type_id
-        self.name = name
+        self.name = prop_type_name
 
         if accessmode in ['RO', 'WO', 'RW']:
             self.accessmode = accessmode
@@ -44,12 +45,12 @@ def add_property(new_property):
     PROPERTY_TYPES[str(new_property.id)] = new_property
 
 try:
-    f = open(settings.PROPERTY_TYPES_CONFIG_FILE, "r")  
+    fp = open(str(settings.PROPERTY_TYPES_CONFIG_FILE), "r")
 
-    file = json.load(f)
-    logger.info("Loading properties.json file...")
+    data = json.load(fp)
+    logger.info("Loading "+str(settings.PROPERTY_TYPES_CONFIG_FILE)+" file...")
 
-    for ele in file["PROPERTY_TYPES"]:
+    for ele in data["PROPERTY_TYPES"]:
         id = ele["id"]
         name = ele["name"]
         access_mode = ele["access_mode"]
@@ -58,6 +59,6 @@ try:
 
         PROPERTY_TYPES[int(id)] = PropertyType(id, name, access_mode, value_type, value_type_id)
 
-    f.close()
+    fp.close()
 except:
-    logger.info("FILE: 'properties.json' not found")
+    logger.info("FILE: "+str(settings.PROPERTY_TYPES_CONFIG_FILE)+" not found")

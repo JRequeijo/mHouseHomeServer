@@ -11,3 +11,4 @@ class IDGenerator:
 
     def new_device_id(self):
         return self.current_device_id()+1
+        

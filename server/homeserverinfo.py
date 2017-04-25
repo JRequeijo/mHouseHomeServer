@@ -14,7 +14,7 @@ class HomeServerInfo(Resource):
     def __init__(self, server):
 
         super(HomeServerInfo, self).__init__("HomeServerInfo", server, visible=True,
-                                            observable=True, allow_children=False)
+                                             observable=True, allow_children=False)
 
         self.server = server
         self.root_uri = "/info"
@@ -27,8 +27,9 @@ class HomeServerInfo(Resource):
         self.resource_type = "HomeServer"
         self.interface_type = "if1"
 
-    def get_info(self):     
-        return { "server_id": self.server.id , "name": self.server.name, "address": self.server.address}
+    def get_info(self):
+        return {"server_id": self.server.id, "name": self.server.name,\
+                 "address": self.server.address}
 
     def get_json(self):
         return json.dumps(self.get_info())
@@ -42,20 +43,22 @@ class HomeServerInfo(Resource):
 
     def render_PUT(self, request):
 
-        if(request.content_type is defines.Content_types.get("application/json")):
+        if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)
             except:
                 logger.error("Request payload not json")
-                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")           
+                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
 
             try:
                 self.server.name = body["name"]
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self.payload)
+                return status(defines.Codes.CHANGED, self)
 
             except KeyError as err:
-                return error(defines.Codes.BAD_REQUEST, "Field '"+str(err.message)+"' not found on request json body")
+                return error(defines.Codes.BAD_REQUEST,\
+                                "Field ("+str(err.message)+") not found on request json body")
         else:
-            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT, "Content must be application/json")
+            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+                            "Content must be application/json")

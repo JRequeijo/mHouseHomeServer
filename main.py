@@ -102,7 +102,7 @@ def actualize_info():
 
                 return send_response(resp.payload, resp.code)
             except KeyError as err:
-                abort(400, "Field '"+err.message+"' missing on request json body")
+                abort(400, "Field ("+err.message+") missing on request json body")
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -203,7 +203,7 @@ def actualize_device_info(device_id):
 
                 return send_response(resp.payload, resp.code)
             except KeyError as err:
-                abort(400, "Field '"+err.message+"' missing on request json body")
+                abort(400, "Field ("+err.message+") missing on request json body")
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -258,11 +258,11 @@ def get_device_type(device_id):
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
-    
+
     err_check = check_error_response(resp)
     if err_check is not None:
         abort(err_check[0], err_check[1])
-    
+
     return send_response(resp.payload, resp.code)
 
 
@@ -274,11 +274,11 @@ def get_device_services(device_id):
     except AppError as err:
         abort(504, err.msg)
     resp = comm.get_response(resp)
-    
+
     err_check = check_error_response(resp)
     if err_check is not None:
         abort(err_check[0], err_check[1])
-    
+
     return send_response(resp.payload, resp.code)
 
 

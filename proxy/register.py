@@ -260,6 +260,8 @@ def get_configs(confs):
                     for ele1 in js["value_types"]["choices"]:
                         if ele1["id"] == ele:
                             e["choices"][str(ele1["name"])] = ele1["value"]
+                        if ele1["id"] == e["default_value"]:
+                            e["default_value"] = ele1["name"]
 
             json.dump(data, value_types_file)
             value_types_file.close()

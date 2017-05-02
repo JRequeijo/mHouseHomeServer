@@ -467,6 +467,7 @@ class CoAP(object):
                         logger.debug("Device ("+str(d.id)+") is down")
                         del_marked.append(d)
                         logger.debug("Device ("+str(d.id)+") marked for deletion")
+
                 for d in del_marked:
                     d.delete()
                     logger.debug("Device ("+str(d.id)+") Deleted")

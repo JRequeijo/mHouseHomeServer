@@ -6,6 +6,7 @@ from coapthon.resources.resource import Resource
 
 from utils import status, error
 
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -44,21 +45,26 @@ class HomeServerInfo(Resource):
     def render_PUT(self, request):
 
         if request.content_type is defines.Content_types.get("application/json"):
-            try:
-                body = json.loads(request.payload)
-            except:
-                logger.error("Request payload not json")
-                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
+            if str(request.source[0]) == self.server.address:
+                try:
+                    body = json.loads(request.payload)
+                except:
+                    logger.error("Request payload not json")
+                    return error(defines.Codes.BAD_REQUEST,\
+                                    "Request content must be json formated")
 
-            try:
-                self.server.name = body["name"]
+                try:
+                    self.server.name = body["name"]
 
-                self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self)
+                    self.payload = self.get_payload()
+                    return status(defines.Codes.CHANGED, self)
 
-            except KeyError as err:
-                return error(defines.Codes.BAD_REQUEST,\
+                except KeyError as err:
+                    return error(defines.Codes.BAD_REQUEST,\
                                 "Field ("+str(err.message)+") not found on request json body")
+            else:
+                return error(defines.Codes.FORBIDDEN,\
+                            "Only from the cloud the server info can be updated")
         else:
             return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                             "Content must be application/json")

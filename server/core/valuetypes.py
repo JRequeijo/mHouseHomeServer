@@ -82,12 +82,12 @@ class EnumValueType:
 #         else:
 #             return False
 
-SCALAR_VALUE_TYPES = {'0': ScalarValueType(0, "Default_ScalarValueType", "empty", 0, 100, 1, 0)}
+SCALAR_VALUE_TYPES = {"0": ScalarValueType(0, "Default_ScalarValueType", "empty", 0, 100, 1, 0)}
 
-ENUM_VALUE_TYPES = {'0': EnumValueType(0, "Default_EnumValueType",\
+ENUM_VALUE_TYPES = {"0": EnumValueType(0, "Default_EnumValueType",\
                                         {"default_key":"default_value"}, "default_key")}
 
-# ARRAY_VALUE_TYPES = {'0': ArrayValueType(0, "Default_ArrayValueType", 15, "Default_value")}
+# ARRAY_VALUE_TYPES = {"0": ArrayValueType(0, "Default_ArrayValueType", 15, "Default_value")}
 
 try:
     fp = open(str(settings.VALUE_TYPES_CONFIG_FILE), "r")

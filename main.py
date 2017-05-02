@@ -1,14 +1,13 @@
-from bottle import Bottle, run, request, response, abort, debug
+
 import json
-from coapthon import defines
-from multiprocessing import Process
-import os
 import sys
-import requests
 import logging
 import thread
+from multiprocessing import Process
 from functools import wraps
 
+from bottle import Bottle, run, request, response, abort, debug
+from coapthon import defines
 
 from proxy.register import *
 from proxy.communicator import Communicator
@@ -113,7 +112,7 @@ def actualize_info():
 # ###### Devices List Endpoints########
 @proxy.get("/devices")
 def get_all_devices():
-    try: 
+    try:
         resp = comm.get("/devices", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
         abort(504, err.msg)
@@ -282,50 +281,59 @@ def get_device_services(device_id):
     return send_response(resp.payload, resp.code)
 
 
-# @proxy.post("/devices/<device_id:int>/services")
-# def add_service_to_device(device_id):
-#     if request.headers['content-type'] == "application/json":
-#         try:
-#             body = request.json
-#         except:
-#             abort(400, "Request body not properly json formated")
-            
-#         if body is not None:
-#             try:
-#                 data = {}
-#                 data["id"] = body["id"]
-#                 data["name"] = body["name"]
-        
-#                 resp = comm.post("/devices/"+str(device_id)+"/services", json.dumps(data))
-#                 resp = comm.get_response(resp)
-                
-#                 err_check = check_error_response(resp)
-#                 if err_check is not None:
-#                     abort(err_check[0], err_check[1])
-                
-#                 return send_response(resp.payload, resp.code)
-            
-#             except KeyError as err:
-#                 abort(400, "Field '"+err.message+"' missing on request json body")
-#         else:
-#             abort(400, "Request body formated in json is missing")
-#     else:
-#         abort(415, "Request body content format not json")
+@proxy.post("/devices/<device_id:int>/services")
+def add_service_to_device(device_id):
+    if request.headers['content-type'] == "application/json":
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
+
+        if body is not None:
+            if isinstance(body, list):
+                try:
+                    data = []
+                    for n in body:
+                        serv = int(n)
+                        data.append(serv)
+
+                    resp = comm.post("/devices/"+str(device_id)+"/services", json.dumps(data))
+                    resp = comm.get_response(resp)
+
+                    err_check = check_error_response(resp)
+                    if err_check is not None:
+                        abort(err_check[0], err_check[1])
+
+                    return send_response(resp.payload, resp.code)
+
+                except:
+                    abort(400, "Request body must specify a list of service ids in json format")
+            else:
+                abort(400, "Request body must specify a list of service ids in json format")
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 
-# @proxy.delete("/devices/<device_id:int>/services")
-# def delete_service_from(device_id):
-#     resp = comm.delete("/devices/"+str(device_id)+"/services")
-#     resp = comm.get_response(resp)
-    
-#     err_check = check_error_response(resp)
-#     if err_check is not None:
-#         abort(err_check[0], err_check[1])
-    
-#     return send_response(resp.payload, resp.code)
+@proxy.delete("/devices/<device_id:int>/services")
+def delete_service_from(device_id):
 
+    try:
+        s_id = request.query.get("id")
+        s_id = int(s_id)
+    except:
+        abort(400, "Request query must specify a service id to delete")
 
-            
+    resp = comm.delete("/devices/"+str(device_id)+"/services?id="+str(s_id))
+    resp = comm.get_response(resp)
+
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
+
+    return send_response(resp.payload, resp.code)
+
 
 # ######## Helper Functions #######
 

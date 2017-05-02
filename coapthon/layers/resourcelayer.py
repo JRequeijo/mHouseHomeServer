@@ -459,10 +459,20 @@ class ResourceLayer(object):
             if resource in defines.Codes.LIST:
                 if resource < defines.Codes.ERROR_LOWER_BOUND:
                     print "FOI NORMAL COM CODIGO"
-                    aux = resource
-                    resource = callback
-                    callback = aux
-                    transaction.response.code = callback
+                    transaction.response.code = resource
+                    transaction.response.payload = callback.payload
+
+                    try:
+                        transaction.response.payload = callback.payload
+                        if callback.actual_content_type is not None \
+                            and callback.actual_content_type != defines.Content_types["text/plain"]:
+                            transaction.response.content_type = callback.actual_content_type
+                    except KeyError:
+                        transaction.response.code = defines.Codes.NOT_ACCEPTABLE.number
+                        return transaction.response
+
+                    transaction.resource.deleted = True
+                    return transaction
                 else:
                     print "FOI ERROR"
                     transaction.response.code = resource
@@ -477,7 +487,7 @@ class ResourceLayer(object):
             # Handle error
             transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
             return transaction
-        
+
         if ret:
             del self._parent.root[path]
             transaction.response.code = defines.Codes.DELETED.number

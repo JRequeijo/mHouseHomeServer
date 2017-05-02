@@ -31,3 +31,4 @@ COMM_TIMEOUT = 2
 
 ## Online Platform base URL
 CLOUD_BASE_URL = "http://127.0.0.1:8000/"
+ALLOW_WORKING_OFFLINE = False

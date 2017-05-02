@@ -76,10 +76,16 @@ def get_my_ip():
     return myip
 
 def check_on_body(body, keys):
-    for k in keys:
-        if not k in body.keys():
-            raise AppError(defines.Codes.BAD_REQUEST,\
-                            "Request json body does not contain field ("+k+")")
+    if isinstance(body, dict):
+        for k in keys:
+            if not k in body.keys():
+                raise AppError(defines.Codes.BAD_REQUEST,\
+                                "Request json body does not contain field ("+k+")")
+    else:
+        for k in keys:
+            if not k in body:
+                raise AppError(defines.Codes.BAD_REQUEST,\
+                                "Request json body does not contain field ("+k+")")
 
 def CoAP2HTTP_code(code):
     phrase = defines.Codes.LIST[code].name

@@ -53,7 +53,7 @@ class EnumValueType:
         self.name = enum_name
         self.enum = enum_values
 
-        if default_value not in enum.keys():
+        if default_value not in enum_values.keys():
             raise Exception("Invalid Default Value")
 
         self.default_value = default_value

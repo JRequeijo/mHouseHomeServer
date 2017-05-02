@@ -149,7 +149,7 @@ def notify_cloud(device_state):
         client.auth = (email, password)
 
         try:
-            resp = client.patch(settings.CLOUD_BASE_URL+"devices/"+str(device_state.device.id)\
+            resp = client.patch(settings.CLOUD_BASE_URL+"devices/"+str(device_state.device.universal_id)\
                                 +"/state/?fromserver=true", data=device_state.get_json())
             if resp.status_code == 200:
                 print "STATE CHANGED"
@@ -181,14 +181,20 @@ class Device(Resource):
         if validate_IPv4(address):
             self.address = address
         else:
-            raise AppError(defines.Codes.INTERNAL_SERVER_ERROR,\
+            raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid IP address ("+str(address)+")")
 
         if validate_device_type(type_id):
             self.device_type_id = type_id
+        else:
+            raise AppError(defines.Codes.BAD_REQUEST,\
+                            "Invalid device type ("+str(type_id)+")")
 
         if validate_services(services):
             self.services_ids = services
+        else:
+            raise AppError(defines.Codes.BAD_REQUEST,\
+                            "Invalid services provided")
 
         self.server.add_resource(self.root_uri, self)
 
@@ -213,7 +219,7 @@ class Device(Resource):
 
     def get_info(self):
         return {"device_id": self.id, "name": self.name, "address": self.address,\
-                "device_type": self.device_type.type.id, "services": self.services_ids,\
+                "device_type": self.device_type.type.id, "services": self.services.services,\
                 "state":self.state.get_simplified_info(), "universal_id":self.universal_id}
 
     def get_json(self):
@@ -266,7 +272,8 @@ class Device(Resource):
         self.state.delete()
         self.services.delete()
 
-        thread.start_new_thread(unregist_device_from_cloud, (self.universal_id,))
+        if not settings.WORKING_OFFLINE:
+            thread.start_new_thread(unregist_device_from_cloud, (self.universal_id,))
 
         return True
 
@@ -336,6 +343,7 @@ class DevicesList(Resource):
         for ele in self.devices.values():
             d = ele.get_info()
             d.pop("state")
+            d.pop("services")
             ret.append(d)
         return ret
 
@@ -374,7 +382,8 @@ class DevicesList(Resource):
 
                 dev = self.add_device(body)
 
-                thread.start_new_thread(regist_device_on_cloud, (dev,))
+                if not settings.WORKING_OFFLINE:
+                    thread.start_new_thread(regist_device_on_cloud, (dev,))
 
                 self.payload = self.get_payload()
                 return status(defines.Codes.CREATED, self)
@@ -513,8 +522,10 @@ class DeviceState(Resource):
                             "Content must be a json dictionary")
                 print self.device.address
                 print str(origin)
-                if self.device.address == str(origin):
-                    thread.start_new_thread(notify_cloud, (self,))
+
+                if not settings.WORKING_OFFLINE:
+                    if self.device.address == str(origin):
+                        thread.start_new_thread(notify_cloud, (self,))
 
                 self.payload = self.get_payload()
                 return status(defines.Codes.CHANGED, self)
@@ -585,7 +596,7 @@ class DeviceServicesResource(Resource):
 
         device.server.add_resource(self.root_uri, self)
 
-        self.services = {}
+        self.services = device.services_ids
 
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"
@@ -624,27 +635,20 @@ class DeviceServicesResource(Resource):
                 return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
 
             try:
-                if isinstance(body, list):
-                    for ele in body:
-                        id = ele["id"]
-                        name = ele["name"]
-                        self.services[int(id)] = name
-
-                elif isinstance(body, dict):
-                    id = ele["id"]
-                    name = ele["name"]
-                    self.services[int(id)] = name
+                if validate_services(body):
+                    for n in body:
+                        serv = int(n)
+                        if serv not in self.services:
+                            self.services.append(serv)
                 else:
                     return error(defines.Codes.BAD_REQUEST,\
-                    "Request content must be json list of services or\
-                             a json dictionary with only one service")
+                                    "Services provided are not valid")
 
                 self.payload = self.get_payload()
                 return status(defines.Codes.CHANGED, self)
-
             except:
                 return error(defines.Codes.BAD_REQUEST,\
-                            "Request content must specify a service id in json format")
+                "Request content must specify a list of service ids in json format")
         else:
             return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                         "Request content format not application/json")
@@ -654,9 +658,9 @@ class DeviceServicesResource(Resource):
             query = request.uri_query
             aux = [query]
             d = dict(s.split("=") for s in aux)
-            id = d["id"]
+            id = int(d["id"])
             try:
-                self.services.pop(id)
+                self.services.remove(id)
             except:
                 return error(defines.Codes.NOT_FOUND,\
                             "Service with id ("+str(id)+") is not attributed for this device")
@@ -665,5 +669,5 @@ class DeviceServicesResource(Resource):
             return status(defines.Codes.DELETED, self)
         except:
             return error(defines.Codes.BAD_REQUEST,\
-            "Request query must specify an id of the service to remove from the device services")
+            "Request query must specify an id of the service to remove")
 

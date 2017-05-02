@@ -1,1 +1,1 @@
-{"DEVICE_TYPES": [{"properties": [1, 2], "id": 1, "name": "Adjustable Light"}, {"properties": [3], "id": 2, "name": "Temperature Sensor"}, {"properties": [1, 3, 4], "id": 3, "name": "TestingDevice"}]}
+{"DEVICE_TYPES": [{"user": null, "properties": [1, 2], "id": 1, "name": "Adjustable Light"}, {"user": null, "properties": [3], "id": 2, "name": "Temperature Sensor"}, {"user": null, "properties": [1, 3, 4], "id": 3, "name": "TestingDevice"}]}

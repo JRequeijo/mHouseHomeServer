@@ -19,7 +19,7 @@ def register():
         f.close()
         if registerFromFile(confs):
             settings.WORKING_OFFLINE = False
-            return get_core_configs()
+            return get_configs(confs) and get_services(confs)
 
         elif settings.ALLOW_WORKING_OFFLINE:
             settings.WORKING_OFFLINE = True
@@ -27,8 +27,11 @@ def register():
             return True
     except:
         if registerFromScratch():
+            f = open(settings.SERVER_CONFIG_FILE, "r")
+            confs = json.load(f)
+            f.close()
             settings.WORKING_OFFLINE = False
-            return get_core_configs()
+            return get_configs(confs) and get_services(confs)
 
         elif settings.ALLOW_WORKING_OFFLINE:
             settings.WORKING_OFFLINE = True
@@ -215,23 +218,25 @@ def registerFromScratch():
     return True
 
 
-def get_core_configs():
+def get_configs(confs):
 
     core_configs_url = settings.CLOUD_BASE_URL+"api/configs/"
+    email = confs["email"]
+    password = confs["password"]
 
     with requests.Session() as client:
-        headers = {"Accept":"application/json"}
-
+        client.headers = {"Accept":"application/json"}
+        client.auth = (email, password)
         try:
             # Retrieve the CSRF token first
-            resp = client.get(core_configs_url, headers=headers)
+            resp = client.get(core_configs_url)
             js = json.loads(resp.text)
         except:
             print "ERROR: You do not have connection to the internet or the cloud server is down"
             return False
 
         try:
-            logger.info("Getting core configs (device_types)")
+            logger.info("Getting configurations: (device_types)")
             device_types_file = open(settings.DEVICE_TYPES_CONFIG_FILE, "w")
             data = {}
             data["DEVICE_TYPES"] = js["device_types"]
@@ -242,7 +247,7 @@ def get_core_configs():
             return False
 
         try:
-            logger.info("Getting core configs (value_types)")
+            logger.info("Getting configurations: (value_types)")
             value_types_file = open(settings.VALUE_TYPES_CONFIG_FILE, "w")
             data = {}
             data["SCALAR_TYPES"] = js["value_types"]["scalars"]
@@ -253,8 +258,8 @@ def get_core_configs():
                 e["choices"] = {}
                 for ele in ch:
                     for ele1 in js["value_types"]["choices"]:
-                        if ele1["name"] == ele:
-                            e["choices"][str(ele)] = ele1["value"]
+                        if ele1["id"] == ele:
+                            e["choices"][str(ele1["name"])] = ele1["value"]
 
             json.dump(data, value_types_file)
             value_types_file.close()
@@ -263,7 +268,7 @@ def get_core_configs():
             return False
 
         try:
-            logger.info("Getting core configs (property_types)")
+            logger.info("Getting configurations: (property_types)")
             property_types_file = open(settings.PROPERTY_TYPES_CONFIG_FILE, "w")
             data = {}
             data["PROPERTY_TYPES"] = js["property_types"]
@@ -274,3 +279,32 @@ def get_core_configs():
             return False
     return True
 
+def get_services(confs):
+
+    services_url = settings.CLOUD_BASE_URL+"api/services/"
+    email = confs["email"]
+    password = confs["password"]
+
+    with requests.Session() as client:
+        client.headers = {"Accept":"application/json"}
+        client.auth = (email, password)
+        try:
+            # Retrieve the CSRF token first
+            resp = client.get(services_url)
+            js = json.loads(resp.text)
+        except:
+            print "ERROR: You do not have connection to the internet or the cloud server is down"
+            return False
+
+        try:
+            logger.info("Getting Services")
+            services_file = open(settings.SERVICES_CONFIG_FILE, "w")
+            data = {}
+            data["SERVICES"] = js["services"]
+            json.dump(data, services_file)
+            services_file.close()
+        except:
+            logger.error("Could not open/create "+settings.SERVICES_CONFIG_FILE+" file")
+            return False
+
+    return True

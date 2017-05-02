@@ -1,7 +1,1 @@
-{ "SERVICES": [ {"id": 1, "name": "Heating"},
-				{"id": 2, "name": "Lighting"},
-				{"id": 3, "name": "Security"},
-				{"id": 4, "name": "Appliances"},
-				{"id": 5, "name": "Irrigation"}
-				]
-}
+{"SERVICES": [{"core_service_ref": 1, "id": 1, "name": "Heating"}, {"core_service_ref": 2, "id": 2, "name": "Lighting"}, {"core_service_ref": 3, "id": 3, "name": "Security"}, {"core_service_ref": 4, "id": 4, "name": "Appliances"}]}

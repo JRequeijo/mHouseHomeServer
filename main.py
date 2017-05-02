@@ -17,7 +17,7 @@ import settings
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
-logger = logging.getLogger('proxylog')
+logger = logging.getLogger("proxylog")
 
 if not register():
     sys.exit()
@@ -33,7 +33,7 @@ def log_to_logger(fn):
     def _log_to_logger(*args, **kwargs):
         actual_response = fn(*args, **kwargs)
         # modify this to log exactly what you need:
-        logger.info('From: %s - %s %s %s' % (request.remote_addr, request.method, request.url,\
+        logger.info("From: %s - %s %s %s" % (request.remote_addr, request.method, request.url,\
                                                 response.status))
         return actual_response
     return _log_to_logger
@@ -57,12 +57,11 @@ def save_server_confs(new_name):
         f.close()
     except Exception as err:
         logger.error(err.message)
-
+#
 # ################  PROXY ENDPOINTS  ##################
-
 # ###### Server Root Endpoints########
-@proxy.get('/')
-@proxy.get('/info')
+@proxy.get("/")
+@proxy.get("/info")
 def get_info():
     try:
         resp = comm.get("/info", timeout=settings.COMM_TIMEOUT)
@@ -77,9 +76,9 @@ def get_info():
 
     return send_response(resp.payload, resp.code)
 
-@proxy.put('/info')
+@proxy.put("/info")
 def actualize_info():
-    if request.headers['content-type'] == "application/json":
+    if request.headers["content-type"] == "application/json":
         try:
             body = request.json
         except:
@@ -108,7 +107,7 @@ def actualize_info():
         abort(415, "Request body content format not json")
 
 
-
+#
 # ###### Devices List Endpoints########
 @proxy.get("/devices")
 def get_all_devices():
@@ -126,7 +125,7 @@ def get_all_devices():
 
 @proxy.post("/devices")
 def regist_device():
-    if request.headers['content-type'] == "application/json":
+    if request.headers["content-type"] == "application/json":
         try:
             body = request.json
         except:
@@ -151,6 +150,7 @@ def regist_device():
 
 
 
+#
 # ###### Single Device Endpoints########
 @proxy.get("/devices/<device_id:int>")
 def get_device(device_id):
@@ -180,9 +180,9 @@ def unregist_device(device_id):
 
     return send_response(resp.payload, resp.code)
 
-@proxy.put('/devices/<device_id:int>')
+@proxy.put("/devices/<device_id:int>")
 def actualize_device_info(device_id):
-    if request.headers['content-type'] == "application/json":
+    if request.headers["content-type"] == "application/json":
         try:
             body = request.json
         except:
@@ -208,6 +208,7 @@ def actualize_device_info(device_id):
     else:
         abort(415, "Request body content format not json")
 
+#
 # ###### States Endpoints########
 @proxy.get("/devices/<device_id:int>/state")
 def get_device_state(device_id):
@@ -225,7 +226,7 @@ def get_device_state(device_id):
 
 @proxy.put("/devices/<device_id:int>/state")
 def change_device_state(device_id):
-    if request.headers['content-type'] == "application/json":
+    if request.headers["content-type"] == "application/json":
         try:
             body = request.json
         except:
@@ -249,6 +250,7 @@ def change_device_state(device_id):
         abort(415, "Request body content format not json")
 
 
+#
 # ###### Types Endpoints########
 @proxy.get("/devices/<device_id:int>/type")
 def get_device_type(device_id):
@@ -265,6 +267,7 @@ def get_device_type(device_id):
     return send_response(resp.payload, resp.code)
 
 
+#
 # ###### Services Endpoints########
 @proxy.get("/devices/<device_id:int>/services")
 def get_device_services(device_id):
@@ -283,7 +286,7 @@ def get_device_services(device_id):
 
 @proxy.post("/devices/<device_id:int>/services")
 def add_service_to_device(device_id):
-    if request.headers['content-type'] == "application/json":
+    if request.headers["content-type"] == "application/json":
         try:
             body = request.json
         except:
@@ -334,12 +337,12 @@ def delete_service_from(device_id):
 
     return send_response(resp.payload, resp.code)
 
-
+#
 # ######## Helper Functions #######
 
 # #change to use authentication framework
 # def authorize(request):
-#     if (request.environ.get('REMOTE_ADDR') == get_my_ip()) and (request.headers['user-agent'] == "app-communicator"):
+#     if (request.environ.get("REMOTE_ADDR") == get_my_ip()) and (request.headers["user-agent"] == "app-communicator"):
 #         return True
 #     else:
 #         return False
@@ -362,7 +365,7 @@ def check_error_response(response):
     else:
         return None
 
-
+#
 ######### Handle Errors #############
 @proxy.error(400)
 @proxy.error(404)
@@ -374,7 +377,8 @@ def check_error_response(response):
 def errorHandler(error):
     return send_response(json.dumps({"error_code": error.status_code, "error_msg": error.body}))
 
-
+#
+##### Initialization
 def initialize_home_server(server_confs_file_name):
     try:
         f = open(server_confs_file_name, "r")
@@ -386,7 +390,7 @@ def initialize_home_server(server_confs_file_name):
         logger.error("ERROR: Unable to open server configuration file. Server probably not registed.")
         sys.exit()
 
-
+#
 ####### Initialize Home Server ########
 home_server_proc = Process(target=initialize_home_server, args=(settings.SERVER_CONFIG_FILE,))
 home_server_proc.start()

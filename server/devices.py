@@ -334,7 +334,7 @@ class DeviceState(Resource):
                                         "Property ("+str(key)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
                                 if prop.valuetype_class == valuetypes.SCALAR:
-                                    p["value"] = int(new_state[k])
+                                    p["value"] = float(new_state[k])
                                 else:
                                     p["value"] = str(new_state[k])
                             else:
@@ -351,7 +351,7 @@ class DeviceState(Resource):
                                         "Property ("+str(k)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
                                 if prop.valuetype_class == valuetypes.SCALAR:
-                                    p["value"] = int(new_state[k])
+                                    p["value"] = float(new_state[k])
                                 else:
                                     p["value"] = str(new_state[k])
                             else:

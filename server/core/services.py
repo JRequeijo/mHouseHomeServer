@@ -6,14 +6,24 @@ import logging.config
 logger = logging.getLogger(__name__)
 
 class Service:    
-    def __init__(self, service_id, name):
+    def __init__(self, service_id, name, core_service_ref=None):
         self.id = service_id
         self.name = name
 
-    def get_info(self):
-        return {"id": self.id, "name": self.name}
+        if core_service_ref == None:
+            self.core_service_ref = core_service_ref
+        else:
+            try:
+                aux = int(core_service_ref)
+                self.core_service_ref = aux
+            except:
+                self.core_service_ref = None
 
-SERVICES = {0: Service(0, "Undefined Service")}
+    def get_info(self):
+        return {"id": self.id, "name": self.name, "core_service_ref":self.core_service_ref}
+
+# SERVICES = {0: Service(0, "Undefined Service")}
+SERVICES = {}
 
 def validate_services(service_ids):
     for s in service_ids:
@@ -25,8 +35,26 @@ def validate_services(service_ids):
 
     return True
 
-# def add_service(new_service):
-#         SERVICES[str(new_service.id)] = new_service
+def get_all_services():
+    data = {"SERVICES":[]}
+    for s in SERVICES.itervalues():
+        data["SERVICES"].append(s.get_info())
+    return data
+
+def add_service(service_id, service_name, core_service_ref):
+    SERVICES[int(service_id)] = Service(service_id, service_name, core_service_ref)
+
+    try:
+        fp = open(str(settings.SERVICES_CONFIG_FILE), "w")
+
+        data = get_all_services()
+
+        json.dump(data, fp)
+
+        fp.close()
+    except:
+        logger.info("FILE: "+str(settings.SERVICES_CONFIG_FILE)+" not found")
+
 
 try:
     fp = open(str(settings.SERVICES_CONFIG_FILE), "r")
@@ -37,8 +65,8 @@ try:
     for ele in data["SERVICES"]:
         id = ele["id"]
         name = ele["name"]
-
-        SERVICES[int(id)] = Service(id, name)
+        core_service_ref = ele["core_service_ref"]
+        SERVICES[int(id)] = Service(id, name, core_service_ref)
 
     fp.close()
 except:

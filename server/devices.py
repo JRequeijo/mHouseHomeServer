@@ -58,7 +58,7 @@ class Device(Resource):
                             "Invalid device type ("+str(type_id)+")")
 
         if self.server.services.validate_services(services):
-            self.services_ids = services
+            self.services_aux = services
         else:
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid services provided")
@@ -463,7 +463,8 @@ class DeviceServicesResource(Resource):
 
         device.server.add_resource(self.root_uri, self)
 
-        self.services = device.services_ids
+        self.services = device.services_aux
+        del device.services_aux
 
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"
@@ -483,11 +484,12 @@ class DeviceServicesResource(Resource):
         return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
 
     def get_services(self):
-        return self.services
+        aux = self.services
+        for s in aux:
+            if int(s) not in self.device.server.services.services.keys():
+                self.services.remove(s)
 
-    def delete(self):
-        del self.device.server.root[self.root_uri]
-        return True
+        return self.services
 
     ## CoAP Methods
     def render_GET(self, request):

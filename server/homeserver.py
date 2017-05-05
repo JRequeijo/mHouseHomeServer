@@ -6,7 +6,7 @@ import settings
 from server.idgenerator import IDGenerator
 from server.homeserverinfo import HomeServerInfo
 from server.devices import DevicesList
-from server.homeserverservices import HomeServerServices
+from server.core.services import HomeServerServices
 import logging.config
 
 logger = logging.getLogger(__name__)

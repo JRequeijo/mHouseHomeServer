@@ -107,7 +107,7 @@ def update_info():
         abort(415, "Request body content format not json")
 
 #
-### Server Configs Endpoints ###
+### Server Services Endpoints ###
 @proxy.get("/services")
 def get_server_services():
     try:
@@ -122,8 +122,10 @@ def get_server_services():
         abort(err_check[0], err_check[1])
 
     return send_response(resp.payload, resp.code)
-@proxy.post("/services")
-def add_service():
+
+
+@proxy.put("/services")
+def update_server_services():
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -133,73 +135,9 @@ def add_service():
         if body is not None:
             try:
                 data = {}
-                data["id"] = int(body["id"])
-                data["name"] = str(body["name"])
-                if "core_service_ref" in body.keys():
-                    data["core_service_ref"] = body["core_service_ref"]
-                else:
-                    data["core_service_ref"] = None
-            except:
-                abort(400, "Request body improperly formated")
+                data["SERVICES"] = body["SERVICES"]
 
-            try:
-                resp = comm.post("/services", json.dumps(data), timeout=settings.COMM_TIMEOUT)
-            except AppError as err:
-                abort(504, err.msg)
-            resp = comm.get_response(resp)
-
-            err_check = check_error_response(resp)
-            if err_check is not None:
-                abort(err_check[0], err_check[1])
-
-            return send_response(resp.payload, resp.code)
-        else:
-            abort(400, "Request body formated in json is missing")
-    else:
-        abort(415, "Request body content format not json")
-
-@proxy.get("/services/<service_id:int>")
-def get_service(service_id):
-    try:
-        resp = comm.get("/services/"+str(service_id), timeout=settings.COMM_TIMEOUT)
-    except AppError as err:
-        abort(504, err.msg)
-    resp = comm.get_response(resp)
-
-    err_check = check_error_response(resp)
-    if err_check is not None:
-        abort(err_check[0], err_check[1])
-
-    return send_response(resp.payload, resp.code)
-
-@proxy.delete("/services/<service_id:int>")
-def remove_service(service_id):
-    try:
-        resp = comm.delete("/services?id="+str(service_id), timeout=settings.COMM_TIMEOUT)
-    except AppError as err:
-        abort(504, err.msg)
-    resp = comm.get_response(resp)
-
-    err_check = check_error_response(resp)
-    if err_check is not None:
-        abort(err_check[0], err_check[1])
-
-    return send_response(resp.payload, resp.code)
-
-@proxy.put("/services/<service_id:int>")
-def update_service(service_id):
-    if request.headers["content-type"] == "application/json":
-        try:
-            body = request.json
-        except:
-            abort(400, "Request body not properly json formated")
-
-        if body is not None:
-            try:
-                data = {}
-                data["name"] = str(body["name"])
-
-                resp = comm.put("/services?id="+str(service_id), json.dumps(data),\
+                resp = comm.put("/services", json.dumps(data),\
                                                         timeout=settings.COMM_TIMEOUT)
                 resp = comm.get_response(resp)
 
@@ -210,8 +148,6 @@ def update_service(service_id):
                 return send_response(resp.payload, resp.code)
             except KeyError as err:
                 abort(400, "Field ("+err.message+") missing on request json body")
-            except ValueError as err:
-                abort(400, "Invalid service name ("+body["name"]+")")
             # except:
             #     abort(500, "Fatal Server Error")
         else:

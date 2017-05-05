@@ -9,7 +9,7 @@ import settings
 
 from utils import *
 from core.devicetypes import DEVICE_TYPES, validate_device_type
-from core.services import SERVICES, validate_services
+# from core.services import SERVICES, validate_services
 from core.propertytypes import PROPERTY_TYPES
 import core.valuetypes as valuetypes
 

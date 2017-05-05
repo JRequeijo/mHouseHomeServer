@@ -14,7 +14,6 @@ from proxy.communicator import Communicator
 from server.homeserver import HomeServer
 from utils import AppError
 import settings
-import server.core.services as services
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
@@ -78,7 +77,7 @@ def get_info():
     return send_response(resp.payload, resp.code)
 
 @proxy.put("/info")
-def actualize_info():
+def update_info():
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -111,12 +110,20 @@ def actualize_info():
 ### Server Configs Endpoints ###
 @proxy.get("/services")
 def get_server_services():
-    payload = json.dumps(services.get_all_services())
+    try:
+        resp = comm.get("/services", timeout=settings.COMM_TIMEOUT)
+    except AppError as err:
+        abort(504, err.msg)
 
-    return send_response(payload)
+    resp = comm.get_response(resp)
 
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
+
+    return send_response(resp.payload, resp.code)
 @proxy.post("/services")
-def add_service_to_server():
+def add_service():
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -125,66 +132,92 @@ def add_service_to_server():
 
         if body is not None:
             try:
-                service_id = int(body["id"])
-                service_name = str(body["name"])
+                data = {}
+                data["id"] = int(body["id"])
+                data["name"] = str(body["name"])
                 if "core_service_ref" in body.keys():
-                    core_service_ref = body["core_service_ref"]
-                    services.add_service(service_id, service_name, core_service_ref)
+                    data["core_service_ref"] = body["core_service_ref"]
                 else:
-                    services.add_service(service_id, service_name, None)
-
+                    data["core_service_ref"] = None
             except:
                 abort(400, "Request body improperly formated")
 
-            return get_server_services()
+            try:
+                resp = comm.post("/services", json.dumps(data), timeout=settings.COMM_TIMEOUT)
+            except AppError as err:
+                abort(504, err.msg)
+            resp = comm.get_response(resp)
+
+            err_check = check_error_response(resp)
+            if err_check is not None:
+                abort(err_check[0], err_check[1])
+
+            return send_response(resp.payload, resp.code)
         else:
             abort(400, "Request body formated in json is missing")
     else:
         abort(415, "Request body content format not json")
 
 @proxy.get("/services/<service_id:int>")
-def get_device(service_id):
+def get_service(service_id):
     try:
-        payload = json.dumps(services.SERVICES[int(service_id)].get_info())
-    except KeyError:
-        abort(404, "Service ("+str(service_id)+") not found on server")
+        resp = comm.get("/services/"+str(service_id), timeout=settings.COMM_TIMEOUT)
+    except AppError as err:
+        abort(504, err.msg)
+    resp = comm.get_response(resp)
 
-    return send_response(payload)
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
+
+    return send_response(resp.payload, resp.code)
 
 @proxy.delete("/services/<service_id:int>")
-def unregist_device(service_id):
-    service = services.SERVICES.pop(int(service_id))
-    del service
-    response.status = 204
-    return
+def remove_service(service_id):
+    try:
+        resp = comm.delete("/services?id="+str(service_id), timeout=settings.COMM_TIMEOUT)
+    except AppError as err:
+        abort(504, err.msg)
+    resp = comm.get_response(resp)
 
-# @proxy.put("/devices/<device_id:int>")
-# def actualize_device_info(device_id):
-#     if request.headers["content-type"] == "application/json":
-#         try:
-#             body = request.json
-#         except:
-#             abort(400, "Request body not properly json formated")
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
 
-#         if body is not None:
-#             try:
-#                 data = {}
-#                 data["name"] = body["name"]
+    return send_response(resp.payload, resp.code)
 
-#                 resp = comm.put("/devices/"+str(device_id), json.dumps(data), timeout=settings.COMM_TIMEOUT)
-#                 resp = comm.get_response(resp)
+@proxy.put("/services/<service_id:int>")
+def update_service(service_id):
+    if request.headers["content-type"] == "application/json":
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
 
-#                 err_check = check_error_response(resp)
-#                 if err_check is not None:
-#                     abort(err_check[0], err_check[1])
+        if body is not None:
+            try:
+                data = {}
+                data["name"] = str(body["name"])
 
-#                 return send_response(resp.payload, resp.code)
-#             except KeyError as err:
-#                 abort(400, "Field ("+err.message+") missing on request json body")
-#         else:
-#             abort(400, "Request body formated in json is missing")
-#     else:
-#         abort(415, "Request body content format not json")
+                resp = comm.put("/services?id="+str(service_id), json.dumps(data),\
+                                                        timeout=settings.COMM_TIMEOUT)
+                resp = comm.get_response(resp)
+
+                err_check = check_error_response(resp)
+                if err_check is not None:
+                    abort(err_check[0], err_check[1])
+
+                return send_response(resp.payload, resp.code)
+            except KeyError as err:
+                abort(400, "Field ("+err.message+") missing on request json body")
+            except ValueError as err:
+                abort(400, "Invalid service name ("+body["name"]+")")
+            # except:
+            #     abort(500, "Fatal Server Error")
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 
 #
@@ -261,7 +294,7 @@ def unregist_device(device_id):
     return send_response(resp.payload, resp.code)
 
 @proxy.put("/devices/<device_id:int>")
-def actualize_device_info(device_id):
+def update_device_info(device_id):
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -281,8 +314,10 @@ def actualize_device_info(device_id):
                     abort(err_check[0], err_check[1])
 
                 return send_response(resp.payload, resp.code)
-            except KeyError as err:
-                abort(400, "Field ("+err.message+") missing on request json body")
+            except ValueError as err:
+                abort(400, "Invalid service name ("+body["name"]+")")
+            except:
+                abort(500, "Fatal Server Error")
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -460,15 +495,15 @@ def errorHandler(error):
 #
 ##### Initialization
 def initialize_home_server(server_confs_file_name):
-    try:
+    # try:
         f = open(server_confs_file_name, "r")
         server_conf = json.load(f)
 
         server = HomeServer(server_conf["id"], server_conf["name"], server_conf["address"])
         server.start()
-    except:
-        logger.error("ERROR: Unable to open server configuration file. Server probably not registed.")
-        sys.exit()
+    # except:
+    #     logger.error("ERROR: Unable to open server configuration file. Server probably not registed.")
+    #     sys.exit()
 
 #
 ####### Initialize Home Server ########

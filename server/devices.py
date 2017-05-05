@@ -10,7 +10,7 @@ import settings
 
 from utils import *
 from core.devicetypes import DEVICE_TYPES, validate_device_type
-from core.services import SERVICES, validate_services
+# from core.services import SERVICES, validate_services
 from core.propertytypes import PROPERTY_TYPES
 import core.valuetypes as valuetypes
 
@@ -57,7 +57,7 @@ class Device(Resource):
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid device type ("+str(type_id)+")")
 
-        if validate_services(services):
+        if self.server.services.validate_services(services):
             self.services_ids = services
         else:
             raise AppError(defines.Codes.BAD_REQUEST,\
@@ -502,7 +502,7 @@ class DeviceServicesResource(Resource):
                 return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
 
             try:
-                if validate_services(body):
+                if self.device.server.services.validate_services(body):
                     for n in body:
                         serv = int(n)
                         if serv not in self.services:

@@ -154,7 +154,61 @@ def update_server_services():
             abort(400, "Request body formated in json is missing")
     else:
         abort(415, "Request body content format not json")
+#
+### Server Configs Endpoints ###
+@proxy.get("/configs")
+def get_server_configurations():
+    try:
+        resp = comm.get("/configs", timeout=settings.COMM_TIMEOUT)
+    except AppError as err:
+        abort(504, err.msg)
 
+    resp = comm.get_response(resp)
+
+    err_check = check_error_response(resp)
+    if err_check is not None:
+        abort(err_check[0], err_check[1])
+
+    return send_response(resp.payload, resp.code)
+
+
+@proxy.put("/configs")
+def update_server_configurations():
+    if request.headers["content-type"] == "application/json":
+        try:
+            c_type = request.query.get("type")
+        except:
+            abort(400, "Request query must specify a type of the config to update")
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
+
+        if body is not None:
+            try:
+                data = {}
+                if c_type in ["SCALAR_TYPES", "ENUM_TYPES", "PROPERTY_TYPES", "DEVICE_TYPES"]:
+                    data[c_type] = body[c_type]
+                else:
+                    abort(400, "Request query must be one of SCALAR_TYPES, ENUM_TYPES, PROPERTY_TYPES or DEVICE_TYPES")
+
+                resp = comm.put("/configs?type="+str(c_type), json.dumps(data),\
+                                                        timeout=settings.COMM_TIMEOUT)
+                resp = comm.get_response(resp)
+
+                err_check = check_error_response(resp)
+                if err_check is not None:
+                    abort(err_check[0], err_check[1])
+
+                return send_response(resp.payload, resp.code)
+            except KeyError as err:
+                abort(400, "Field ("+str(err)+") missing on request json body")
+            # except:
+            #     abort(500, "Fatal Server Error")
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 #
 # ###### Devices List Endpoints########
@@ -260,7 +314,7 @@ def update_device_info(device_id):
         abort(415, "Request body content format not json")
 
 #
-# ###### States Endpoints########
+# ###### Device State Endpoints########
 @proxy.get("/devices/<device_id:int>/state")
 def get_device_state(device_id):
     try:
@@ -302,7 +356,7 @@ def change_device_state(device_id):
 
 
 #
-# ###### Types Endpoints########
+# ###### Device Type Endpoints########
 @proxy.get("/devices/<device_id:int>/type")
 def get_device_type(device_id):
     try:
@@ -319,7 +373,7 @@ def get_device_type(device_id):
 
 
 #
-# ###### Services Endpoints########
+# ###### Device Services Endpoints########
 @proxy.get("/devices/<device_id:int>/services")
 def get_device_services(device_id):
     try:

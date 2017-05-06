@@ -8,9 +8,9 @@ from utils import status, error, check_on_body, AppError, AppHTTPError
 
 import logging
 
-logger = logging.getLogger(__name__)
-
 import settings
+
+logger = logging.getLogger(__name__)
 
 class Service:
     def __init__(self, service_id, name, core_service_ref=None):
@@ -130,8 +130,6 @@ class HomeServerServices(Resource):
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Request body should be a json element with a key SERVICES\
                                 and a list of services as value")
-
-        self.save_services_to_file()
     #
     ### COAP METHODS
     def render_GET(self, request):
@@ -153,6 +151,3 @@ class HomeServerServices(Resource):
                 return status(defines.Codes.CHANGED, self)
             except AppError as e:
                 return error(e.code, e.msg)
-            except:
-                return error(defines.Codes.BAD_REQUEST,\
-                            "Request query must specify an id of the service to update")

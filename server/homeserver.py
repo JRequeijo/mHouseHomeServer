@@ -7,6 +7,7 @@ from server.idgenerator import IDGenerator
 from server.homeserverinfo import HomeServerInfo
 from server.devices import DevicesList
 from server.core.services import HomeServerServices
+from server.core.serverconfigs import HomeServerConfigs
 import logging.config
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ class HomeServer(CoAP):
         self.devices = DevicesList(self)
         self.id_gen = IDGenerator(self)
         self.services = HomeServerServices(self)
+        self.configs = HomeServerConfigs(self)
 
         logger.info("CoAP Server start on " + self.address + ":" + str(self.port))
         logger.info(self.root.dump())

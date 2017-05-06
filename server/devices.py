@@ -9,10 +9,6 @@ from coapthon.resources.resource import Resource
 import settings
 
 from utils import *
-# from core.devicetypes import DEVICE_TYPES, validate_device_type
-# from core.services import SERVICES, validate_services
-# from core.propertytypes import PROPERTY_TYPES
-# import core.valuetypes as valuetypes
 
 import requests
 
@@ -422,7 +418,7 @@ class DeviceTypeResource(Resource):
 
         device.server.add_resource(self.root_uri, self)
 
-        self.type = DEVICE_TYPES[int(device.device_type_id)]
+        self.type = self.device.server.configs.device_types[int(device.device_type_id)]
 
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"
@@ -490,6 +486,10 @@ class DeviceServicesResource(Resource):
                 self.services.remove(s)
 
         return self.services
+    
+    def delete(self):
+        del self.device.server.root[self.root_uri]
+        return True
 
     ## CoAP Methods
     def render_GET(self, request):

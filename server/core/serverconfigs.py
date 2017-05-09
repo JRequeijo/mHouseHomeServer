@@ -411,7 +411,7 @@ class HomeServerConfigs(Resource):
                     self.scalar_value_types.clear()
                     self.scalar_value_types = data
                     self.save_value_types_to_file()
-                
+
                 if c_type == "ENUM_TYPES":
                     for ele in configs:
                         id = int(ele["id"])

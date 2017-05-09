@@ -388,6 +388,40 @@ def get_device_services(device_id):
 
     return send_response(resp.payload, resp.code)
 
+@proxy.put("/devices/<device_id:int>/services")
+def update_services_on_device(device_id):
+    if request.headers["content-type"] == "application/json":
+        try:
+            body = request.json
+        except:
+            abort(400, "Request body not properly json formated")
+
+        if body is not None:
+            print body
+            if isinstance(body, list):
+                try:
+                    data = []
+                    for n in body:
+                        serv = int(n)
+                        data.append(serv)
+
+                    resp = comm.put("/devices/"+str(device_id)+"/services", json.dumps(data))
+                    resp = comm.get_response(resp)
+
+                    err_check = check_error_response(resp)
+                    if err_check is not None:
+                        abort(err_check[0], err_check[1])
+
+                    return send_response(resp.payload, resp.code)
+
+                except:
+                    abort(400, "Request body must specify a list of service ids in json format")
+            else:
+                abort(400, "Request body must specify a list of service ids in json format")
+        else:
+            abort(400, "Request body formated in json is missing")
+    else:
+        abort(415, "Request body content format not json")
 
 @proxy.post("/devices/<device_id:int>/services")
 def add_service_to_device(device_id):

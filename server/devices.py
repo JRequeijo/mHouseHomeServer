@@ -47,7 +47,7 @@ class Device(Resource):
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid IP address ("+str(address)+")")
 
-        if validate_device_type(type_id):
+        if self.server.configs.validate_device_type(type_id):
             self.device_type_id = type_id
         else:
             raise AppError(defines.Codes.BAD_REQUEST,\
@@ -277,7 +277,7 @@ class DeviceState(Resource):
         device.server.add_resource(self.root_uri, self)
 
         # state of the device - to modify periodically
-        self.state = DEVICE_TYPES[int(device.device_type_id)].default_state()
+        self.state = self.device.server.configs.device_types[int(device.device_type_id)].default_state()
 
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"
@@ -322,14 +322,14 @@ class DeviceState(Resource):
                     key = int(k)
                     for p in self.state:
                         if p["property_id"] == key:
-                            prop = PROPERTY_TYPES[key]
+                            prop = self.device.server.configs.property_types[key]
                             if prop.validate(new_state[k]):
                                 if self.device.address != str(origin) and\
                                     prop.accessmode not in ["WO", "RW"]:
                                     raise AppError(defines.Codes.FORBIDDEN,\
                                         "Property ("+str(key)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
-                                if prop.valuetype_class == valuetypes.SCALAR:
+                                if prop.valuetype_class == "SCALAR":
                                     p["value"] = float(new_state[k])
                                 else:
                                     p["value"] = str(new_state[k])
@@ -339,14 +339,14 @@ class DeviceState(Resource):
                 except:
                     for p in self.state:
                         if p["name"] == str(k):
-                            prop = PROPERTY_TYPES[int(p["property_id"])]
+                            prop = self.device.server.configs.property_types[int(p["property_id"])]
                             if prop.validate(new_state[k]):
                                 if self.device.address != str(origin) and\
                                     prop.accessmode not in ["WO", "RW"]:
                                     raise AppError(defines.Codes.FORBIDDEN,\
                                         "Property ("+str(k)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
-                                if prop.valuetype_class == valuetypes.SCALAR:
+                                if prop.valuetype_class == "SCALAR":
                                     p["value"] = float(new_state[k])
                                 else:
                                     p["value"] = str(new_state[k])
@@ -392,7 +392,6 @@ class DeviceState(Resource):
 
                 self.payload = self.get_payload()
                 return status(defines.Codes.CHANGED, self)
-                # return self
 
             except AppError as err:
                 return error(err.code, err.msg)
@@ -495,6 +494,32 @@ class DeviceServicesResource(Resource):
     def render_GET(self, request):
         self.payload = self.get_payload()
         return self
+
+    def render_PUT(self, request):
+        if request.content_type is defines.Content_types.get("application/json"):
+            try:
+                body = json.loads(request.payload)
+            except:
+                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
+
+            try:
+                if self.device.server.services.validate_services(body):
+                    del self.services
+                    self.services = []
+                    for n in body:
+                        self.services.append(int(n))
+                else:
+                    return error(defines.Codes.BAD_REQUEST,\
+                                    "Services provided are not valid")
+
+                self.payload = self.get_payload()
+                return status(defines.Codes.CHANGED, self)
+            except:
+                return error(defines.Codes.BAD_REQUEST,\
+                "Request content must specify a list of service ids in json format")
+        else:
+            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+                        "Request content format not application/json")
 
     def render_POST(self, request):
         if request.content_type is defines.Content_types.get("application/json"):

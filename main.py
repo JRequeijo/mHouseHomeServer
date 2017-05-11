@@ -3,8 +3,11 @@ import json
 import sys
 import logging
 import thread
+import getopt
+
 from multiprocessing import Process
 from functools import wraps
+
 
 from bottle import Bottle, run, request, response, abort, debug
 from coapthon import defines
@@ -13,7 +16,6 @@ from proxy.register import *
 from proxy.communicator import Communicator
 from server.homeserver import HomeServer
 from utils import AppError
-import settings
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 

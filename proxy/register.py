@@ -1,23 +1,40 @@
-import requests
+"""
+    This is the register file for the HomeServer proxy.
+    Here are specified the functions used to register the HomeServer on the cloud
+    service and also to fetch the HomeServer configuration data from it.
+"""
 import json
-import socket
-import getopt
 import sys
 import getpass
 import re
-import utils
 import logging
 
+import requests
+
+import utils
 import settings
 
 logger = logging.getLogger("proxylog")
 
 def register():
+    """
+        This function register the HomeServer on the cloud service.
+        Firstly it tries to register the HomeServer with the informations stored
+        on the HomeServer configuration file. If this fails, it tries to register
+        the HomeServer from scratch, asking the user for some informations like
+        username and password.
+        After the registration process it tries to fetch all the needed configurations
+        from the cloud service.
+
+        All these processes only work if the setting ALLOW_WORKING_OFFLINE
+        is set to False. If it is setted to True, the HomeServer works without Internet
+        connection and without cloud service support/registration.
+    """
     try:
         f = open(settings.SERVER_CONFIG_FILE, "r")
         confs = json.load(f)
         f.close()
-        if registerFromFile(confs):
+        if register_from_file(confs):
             settings.WORKING_OFFLINE = False
             return get_configs(confs) and get_services(confs)
 
@@ -26,7 +43,7 @@ def register():
             logger.info("Working Offline")
             return True
     except:
-        if registerFromScratch():
+        if register_from_scratch():
             f = open(settings.SERVER_CONFIG_FILE, "r")
             confs = json.load(f)
             f.close()
@@ -38,7 +55,12 @@ def register():
             logger.info("Working Offline")
             return True
 
-def registerFromFile(confs):
+def register_from_file(confs):
+    """
+        This function regist the HomeServer with the informations stored
+        on the HomeServer configuration file. If the HomeServer is already registered
+        on the cloud service this syncronizes all the HomeServer informations with it.
+    """
     data = {}
     data["address"] = confs["address"]
     data["name"] = confs["name"]
@@ -115,9 +137,13 @@ def registerFromFile(confs):
                                  file to register from scratch.")
                 return False
 
-def registerFromScratch():
-
-    print "\nStarting Server Configuration from Scratch\n" 
+def register_from_scratch():
+    """
+        This function regist the HomeServer from scratch, i.e. it asks the user for
+        all the neede registration information. If a HomeServer is already registered
+        on the cloud service with the information given by the user, it raises an error.
+    """
+    print "\nStarting Server Configuration from Scratch\n"
 
     base_url = settings.CLOUD_BASE_URL
 
@@ -219,7 +245,11 @@ def registerFromScratch():
 
 
 def get_configs(confs):
-
+    """
+        This function fetches all the needed HomeServer configurations from
+        the cloud service and store them to the configuration files specified
+        on the settings file.
+    """
     core_configs_url = settings.CLOUD_BASE_URL+"api/configs/"
     email = confs["email"]
     password = confs["password"]
@@ -282,7 +312,11 @@ def get_configs(confs):
     return True
 
 def get_services(confs):
-
+    """
+        This function fetches all the user services present on
+        the cloud service and store them to the configuration file specified
+        on the settings file.
+    """
     services_url = settings.CLOUD_BASE_URL+"api/services/"
     email = confs["email"]
     password = confs["password"]

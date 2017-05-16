@@ -321,13 +321,13 @@ def get_device_services(device_id):
 
 def send_response(data, code=None):
     if code is not None:
-        response.status = utils.CoAP2HTTP_code(code)[0]
+        response.status = utils.coap2http_code(code)[0]
     response.set_header("Content-Type", "application/json")
     return data
 
 def check_error_response(response):
     if response.code >= defines.Codes.ERROR_LOWER_BOUND:
-        code, phrase = utils.CoAP2HTTP_code(response.code)
+        code, phrase = utils.coap2http_code(response.code)
 
         if response.payload is not None:
             d = json.loads(response.payload)

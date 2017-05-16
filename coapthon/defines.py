@@ -253,14 +253,14 @@ NOT_IMPLEMENTED = 501  # "Not Implemented" error code
 CoAP_HTTP = {
 
     "CREATED": "201",
-    "DELETED": "200",
+    "DELETED": "204",
     "VALID": "304",
     "CHANGED": "200",
     "CONTENT": "200",
     "BAD_REQUEST": "400",
     "FORBIDDEN": "403",
     "NOT_FOUND": "404",
-    "METHOD_NOT_ALLOWED": "400",
+    "METHOD_NOT_ALLOWED": "405",
     "NOT_ACCEPTABLE": "406",
     "PRECONDITION_FAILED": "412",
     "REQUEST_ENTITY_TOO_LARGE": "413",

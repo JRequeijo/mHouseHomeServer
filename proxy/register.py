@@ -14,6 +14,8 @@ import requests
 import utils
 import settings
 
+__author__ = "Jose Requeijo Dias"
+
 logger = logging.getLogger("proxylog")
 
 def register():
@@ -34,39 +36,47 @@ def register():
         f = open(settings.SERVER_CONFIG_FILE, "r")
         confs = json.load(f)
         f.close()
-        if register_from_file(confs):
+
+        settings.HOME_SERVER_ID = confs["id"]
+        settings.HOME_SERVER_NAME = confs["name"]
+        settings.HOME_SERVER_ADDRESS = confs["address"]
+        settings.USER_PASSWORD = confs["password"]
+        settings.USER_EMAIL = confs["email"]
+
+        if register_from_file():
             settings.WORKING_OFFLINE = False
-            return get_configs(confs) and get_services(confs)
+            return get_configs() and get_services()
 
         elif settings.ALLOW_WORKING_OFFLINE:
             settings.WORKING_OFFLINE = True
             logger.info("Working Offline")
             return True
-    except:
+    except IOError:
         if register_from_scratch():
-            f = open(settings.SERVER_CONFIG_FILE, "r")
-            confs = json.load(f)
-            f.close()
             settings.WORKING_OFFLINE = False
-            return get_configs(confs) and get_services(confs)
+            return get_configs() and get_services()
 
         elif settings.ALLOW_WORKING_OFFLINE:
             settings.WORKING_OFFLINE = True
             logger.info("Working Offline")
             return True
+    except KeyError as err:
+        logger.error("Home Server configurations file improperly setted. "+str(err)+" is missing.")
+        return False
+    except:
+        logger.error("Unknown Fatal Home Server Error!")
+        return False
 
-def register_from_file(confs):
+def register_from_file():
     """
         This function regist the HomeServer with the informations stored
         on the HomeServer configuration file. If the HomeServer is already registered
         on the cloud service this syncronizes all the HomeServer informations with it.
     """
-    data = {}
-    data["address"] = confs["address"]
-    data["name"] = confs["name"]
 
-    email = confs["email"]
-    password = confs["password"]
+    email = settings.USER_EMAIL
+    password = settings.USER_PASSWORD
+    server_id = settings.HOME_SERVER_ID
 
     base_url = settings.CLOUD_BASE_URL
 
@@ -85,7 +95,7 @@ def register_from_file(confs):
 
         client.auth = (email, password)
         try:
-            resp = client.get(base_url+"api/servers/"+str(confs["id"])+"/")
+            resp = client.get(base_url+"api/servers/"+str(server_id)+"/")
         except:
             logger.error("You do not have connection to the internet or the cloud server is down")
             return False
@@ -100,11 +110,14 @@ def register_from_file(confs):
             logger.info("Server Info Retrieved Successfully")
             return True
         else:
+            data = {}
+            data["name"] = settings.HOME_SERVER_NAME
+            data["address"] = settings.HOME_SERVER_ADDRESS
+
             try:
                 resp = client.post(base_url+"api/servers/", data=json.dumps(data))
             except:
-                logger.error("You do not have connection to the\
-                            internet or the cloud server is down")
+                logger.error("You do not have connection to the internet or the cloud server is down")
                 return False
 
             if resp.status_code == 200:
@@ -133,8 +146,7 @@ def register_from_file(confs):
                     logger.error("Error ("+ str(resp.status_code)+"): "+str(js["detail"][0]))
 
                 logger.error("Please check if data on "+settings.SERVER_CONFIG_FILE+\
-                                " file is correct. If you prefer you can delete that\
-                                 file to register from scratch.")
+                                " file is correct. If you prefer you can delete that file to register from scratch.")
                 return False
 
 def register_from_scratch():
@@ -209,8 +221,7 @@ def register_from_scratch():
                 resp = client.post(base_url+"api/servers/", data=json.dumps(data),\
                                     auth=(email, password))
             except:
-                print "ERROR: You do not have connection to\
-                            the internet or the cloud server is down"
+                print "ERROR: You do not have connection to the internet or the cloud server is down"
                 return False
 
             if resp.status_code == 201:
@@ -244,15 +255,15 @@ def register_from_scratch():
     return True
 
 
-def get_configs(confs):
+def get_configs():
     """
         This function fetches all the needed HomeServer configurations from
         the cloud service and store them to the configuration files specified
         on the settings file.
     """
     core_configs_url = settings.CLOUD_BASE_URL+"api/configs/"
-    email = confs["email"]
-    password = confs["password"]
+    email = settings.USER_EMAIL
+    password = settings.USER_PASSWORD
 
     with requests.Session() as client:
         client.headers = {"Accept":"application/json"}
@@ -311,15 +322,15 @@ def get_configs(confs):
             return False
     return True
 
-def get_services(confs):
+def get_services():
     """
         This function fetches all the user services present on
         the cloud service and store them to the configuration file specified
         on the settings file.
     """
     services_url = settings.CLOUD_BASE_URL+"api/services/"
-    email = confs["email"]
-    password = confs["password"]
+    email = settings.USER_EMAIL
+    password = settings.USER_PASSWORD
 
     with requests.Session() as client:
         client.headers = {"Accept":"application/json"}

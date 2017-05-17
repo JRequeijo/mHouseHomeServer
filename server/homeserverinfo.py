@@ -1,17 +1,26 @@
-#!/usr/bin/env python
+"""
+    This is the Home Server Info File.
+    Here is specified the CoAP resource that represents the endpoint (URI)
+    where all the home server information is stored and can be updated.
+"""
 import json
+import logging
 
 from coapthon import defines
 from coapthon.resources.resource import Resource
 
 from utils import status, error
 
-
-import logging
+__author__ = "Jose Requeijo Dias"
 
 logger = logging.getLogger(__name__)
 
 class HomeServerInfo(Resource):
+    """
+        This is the Home Server Info CoAP resource.
+        It epresents the endpoint (URI) where all the home server
+        information is stored and can be updated.
+    """
     def __init__(self, server):
 
         super(HomeServerInfo, self).__init__("HomeServerInfo", server, visible=True,
@@ -29,14 +38,26 @@ class HomeServerInfo(Resource):
         self.interface_type = "if1"
 
     def get_info(self):
+        """
+            This method returns a dictionary with all the informations
+            represented by this CoAP resource.
+        """
         return {"server_id": self.server.id, "name": self.server.name,\
                  "address": self.server.address}
 
     def get_json(self):
+        """
+            This method returns a JSON representation
+            with all the informations represented by this CoAP resource.
+        """
         return json.dumps(self.get_info())
 
     def get_payload(self):
-        return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
+        """
+            This method returns a valid CoAPthon payload representation
+            with all the informations represented by this CoAP resource.
+        """
+        return (defines.Content_types[self.res_content_type], self.get_json())
 
     def render_GET(self, request):
         self.payload = self.get_payload()

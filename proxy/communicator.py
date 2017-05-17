@@ -7,6 +7,8 @@ from coapthon.client.helperclient import HelperClient
 from coapthon import defines
 from utils import AppError
 
+__author__ = "Jose Requeijo Dias"
+
 class Communicator(object):
     """
         This represents a CoAP communicator. It is used to establish connections

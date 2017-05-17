@@ -1,20 +1,30 @@
-#!/usr/bin/env python
-from coapthon.server.coap import CoAP
+"""
+    This is the Home Server Main CoAP File.
+    Here is specified the CoAP server that represents the Home Server Core.
+"""
+import logging
 
-import settings
+from coapthon.server.coap import CoAP
 
 from server.idgenerator import IDGenerator
 from server.homeserverinfo import HomeServerInfo
 from server.devices import DevicesList
 from server.services import HomeServerServices
 from server.serverconfigs import HomeServerConfigs
-import logging.config
+
+import settings
+
+__author__ = "Jose Requeijo Dias"
 
 logger = logging.getLogger(__name__)
 
 
 class HomeServer(CoAP):
-    def __init__(self, server_id, name, address, areas=[]):
+    """
+        This is the Home Server Main CoAP Class.
+        It is the CoAP server that represents the Home Server Core.
+    """
+    def __init__(self, server_id, name, address):
 
         self.id = server_id
         self.name = name
@@ -39,6 +49,10 @@ class HomeServer(CoAP):
         logger.info(self.root.dump())
 
     def start(self):
+        """
+            This method starts the Home Server CoAP server
+            (or what can be viewed as the Home Server Core)
+        """
         try:
             logger.info("Home Server Started...")
             self.listen(10)
@@ -46,6 +60,10 @@ class HomeServer(CoAP):
             self.shutdown()
 
     def shutdown(self):
+        """
+            This method shuts down the Home Server CoAP server
+            (or what can be viewed as the Home Server Core)
+        """
         logger.info("Shutting down server")
         self.close()
         logger.info("Server is down")

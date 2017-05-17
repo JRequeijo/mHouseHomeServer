@@ -18,6 +18,8 @@ import logging
 
 from cloudcomm import *
 
+__author__ = "Jose Requeijo Dias"
+
 logger = logging.getLogger(__name__)
 
 #

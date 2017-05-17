@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 import json
+import logging
 
 from coapthon import defines
 from coapthon.resources.resource import Resource
 
 from utils import status, error, check_on_body, AppError, AppHTTPError
 
-import logging
-
 import settings
+
+__author__ = "Jose Requeijo Dias"
 
 logger = logging.getLogger(__name__)
 

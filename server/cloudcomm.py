@@ -1,45 +1,33 @@
-
+"""
+    This is the Cloud Communicator File.
+    Here are specified all the functions that communicate back
+    with the cloud service, i.e. all the functions that transform
+    the Home Server in a cloud service client and interact with it.
+"""
 import json
-import time
-
-from coapthon import defines
-from coapthon.resources.resource import Resource
-
-import settings
-
-from utils import *
-
+import logging
 import requests
 
-import thread
-import os.path
-import logging
+import settings
+from utils import AppError
+
+__author__ = "Jose Requeijo Dias"
 
 logger = logging.getLogger(__name__)
 
-def get_server_configs():
-    try:
-        f = open(os.path.dirname(__file__) + "/../"+settings.SERVER_CONFIG_FILE, "r")
-
-        file_data = json.load(f)
-
-        check_on_body(file_data, ["email", "password", "id"])
-
-        return file_data
-    except:
-        logger.error("Server Configuration File Not Found or improperly configured")
-        return False
-
 ### REVER ISTO MUITO BEM
 def regist_device_on_cloud(device):
-
-    data = get_server_configs()
-    if data:
-        email = data["email"]
-        password = data["password"]
-        server_id = data["id"]
-    else:
-        return data
+    """
+        This method tries to register a new device on the cloud server.
+        If the device already exists, it synchronizes the information overall system.
+    """
+    try:
+        email = settings.USER_EMAIL
+        password = settings.USER_PASSWORD
+        server_id = settings.HOME_SERVER_ID
+    except:
+        logger.error("Settings file not properly configured. Probably Home Server registration improperly done.")
+        return False
 
     client = requests.Session()
     try:
@@ -101,14 +89,16 @@ def regist_device_on_cloud(device):
 
 ### REVER ISTO MUITO BEM
 def unregist_device_from_cloud(device_id):
-
-    data = get_server_configs()
-    if data:
-        email = data["email"]
-        password = data["password"]
-        server_id = data["id"]
-    else:
-        return data
+    """
+        This method tries to unregister a new device on the cloud server.
+    """
+    try:
+        email = settings.USER_EMAIL
+        password = settings.USER_PASSWORD
+        server_id = settings.HOME_SERVER_ID
+    except:
+        logger.error("Settings file not properly configured. Probably Home Server registration improperly done.")
+        return False
 
     client = requests.Session()
     try:
@@ -126,14 +116,19 @@ def unregist_device_from_cloud(device_id):
 
 #
 def notify_cloud(device_state):
+    """
+        This method notifies the cloud service about changes on the
+        devices or Home Server states/informations.
+    """
+
     print "Notifying Cloud"
-    data = get_server_configs()
-    if data:
-        email = data["email"]
-        password = data["password"]
-        server_id = data["id"]
-    else:
-        return data
+    try:
+        email = settings.USER_EMAIL
+        password = settings.USER_PASSWORD
+        server_id = settings.HOME_SERVER_ID
+    except:
+        logger.error("Settings file not properly configured. Probably Home Server registration improperly done.")
+        return False
 
     client = requests.Session()
     try:

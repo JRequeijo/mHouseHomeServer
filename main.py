@@ -15,7 +15,7 @@ import settings
 from proxy.register import register
 from proxy.communicator import Communicator
 from server.homeserver import HomeServer
-from utils import AppError
+from utils import AppError, coap2http_code
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
@@ -490,13 +490,13 @@ def delete_service_from(device_id):
 
 def send_response(data, code=None):
     if code is not None:
-        response.status = utils.coap2http_code(code)[0]
+        response.status = coap2http_code(code)[0]
     response.set_header("Content-Type", "application/json")
     return data
 
 def check_error_response(response):
     if response.code >= defines.Codes.ERROR_LOWER_BOUND:
-        code, phrase = utils.coap2http_code(response.code)
+        code, phrase = coap2http_code(response.code)
 
         if response.payload is not None:
             d = json.loads(response.payload)

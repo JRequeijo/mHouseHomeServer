@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class HomeServerInfo(Resource):
     """
         This is the Home Server Info CoAP resource.
-        It epresents the endpoint (URI) where all the home server
-        information is stored and can be updated.
+        It represents the endpoint (URI) where all the home server
+        information is stored and can be fetched and/or updated.
     """
     def __init__(self, server):
 

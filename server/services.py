@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+"""
+    This is the Home Server Services file.
+    Here are specified the class representing each service on the server
+    and also the CoAP resource that represents the endpoint (URI)
+    where the Home Server Services can be viewed and/or updated.
+"""
 import json
 import logging
 
@@ -13,7 +18,12 @@ __author__ = "Jose Requeijo Dias"
 
 logger = logging.getLogger(__name__)
 
-class Service:
+class Service(object):
+    """
+        This is the Service class.
+        Each object of this class represents a Service that
+        can be setted/used by the devices connected to this Home Server.
+    """
     def __init__(self, service_id, name, core_service_ref=None):
         self.id = service_id
         self.name = name
@@ -28,10 +38,19 @@ class Service:
                 self.core_service_ref = None
 
     def get_info(self):
+        """
+            This method returns a dictionary with all the information
+            correspondent to a given Service.
+        """
         return {"id": self.id, "name": self.name, "core_service_ref":self.core_service_ref}
 
 
 class HomeServerServices(Resource):
+    """
+        This is the Home Server Services CoAP resource.
+        It represents the endpoint (URI) where all the home server
+        services are stored and can be fetched and/or updated.
+    """
     def __init__(self, server):
 
         super(HomeServerServices, self).__init__("HomeServerServices", server, visible=True,
@@ -52,15 +71,32 @@ class HomeServerServices(Resource):
         self.interface_type = "if1"
 
     def get_info(self):
+        """
+            This method returns a dictionary with all the services
+            represented by this CoAP resource
+        """
         return self.get_all_services()
 
     def get_json(self):
+        """
+            This method returns a JSON representation with all the
+            services represented by this CoAP resource.
+        """
         return json.dumps(self.get_info())
 
     def get_payload(self):
-        return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
+        """
+            This method returns a valid CoAPthon payload representation
+            with all the services represented by this CoAP resource.
+        """
+        return (defines.Content_types[self.res_content_type], self.get_json())
 
     def load_services_from_file(self):
+        """
+            This is an auxiliary method that loads to the resource (memory) all
+            the Services from their correspondent configuration
+            file, pointed by 'settings.SERVICES_CONFIG_FILE'.
+        """
         try:
             fp = open(str(settings.SERVICES_CONFIG_FILE), "r")
 
@@ -78,6 +114,11 @@ class HomeServerServices(Resource):
             logger.info("FILE: "+str(settings.SERVICES_CONFIG_FILE)+" not found")
 
     def save_services_to_file(self):
+        """
+            This is an auxiliary method that saves to the correspondent configuration
+            file, pointed by 'settings.SERVICES_CONFIG_FILE', all
+            the Services represented by this resource.
+        """
         try:
             fp = open(str(settings.SERVICES_CONFIG_FILE), "w")
 
@@ -92,6 +133,10 @@ class HomeServerServices(Resource):
             logger.info("FILE: "+str(settings.SERVICES_CONFIG_FILE)+" not found")
 
     def validate_services(self, service_ids):
+        """
+            This method checks if a given Service is valid to be used
+            on this Home Server
+        """
         for s in service_ids:
             try:
                 if not self.services[int(s)]:
@@ -101,12 +146,34 @@ class HomeServerServices(Resource):
         return True
 
     def get_all_services(self):
+        """
+            This method returns a dictionary with all the services
+            represented by this CoAP resource
+        """
         data = {"SERVICES":[]}
         for s in self.services.itervalues():
             data["SERVICES"].append(s.get_info())
         return data
 
     def update_server_services(self, new_services):
+        """
+            This method adds new and/or updates the services represented
+            by this CoAP resource.
+            The only argument it has must be a list of services that must have
+            all the services that we want on the home server.
+
+            Ex: if the server already has service 1 and 2,
+            and we want to add the service 3, the list to be given must have 3 service
+            JSON objects, each one representing the service 1, 2 and 3 respectively.
+
+            The same logic should be applied to the deletion of services (ex: if we have
+            already service 1, 2 and 3, and we want to delete service 2, the list to
+            provide must have the JSON object representations of services 1 and 3).
+
+            The update of services must be done changing all the services that should be
+            updated and give the full list of services, now with the updated ones, but
+            applying the same logic as the examples before.
+        """
         try:
             services = new_services["SERVICES"]
         except:
@@ -129,8 +196,7 @@ class HomeServerServices(Resource):
                             "List of services improperly formated")
         else:
             raise AppError(defines.Codes.BAD_REQUEST,\
-                            "Request body should be a json element with a key SERVICES\
-                                and a list of services as value")
+                            "Request body should be a json element with a key SERVICES and a list of services as value")
     #
     ### COAP METHODS
     def render_GET(self, request):

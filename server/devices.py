@@ -1,22 +1,26 @@
-#!/usr/bin/env python
-
+"""
+    This is the Home Server Devices file.
+    Here are specified CoAP resources representing the endpoints (URIs)
+    where the Home Server list of devices can be viewed and/or updated,
+    as well as the endpoints for each one of the devices connected to the
+    Home Server and their accessible sub-endpoints/childrens (Device State, Type and
+    Services).
+"""
 import json
+import thread
+import os.path
+import logging
+
+import requests
 import time
 
 from coapthon import defines
 from coapthon.resources.resource import Resource
 
 import settings
-
 from utils import *
 
-import requests
-
-import thread
-import os.path
-import logging
-
-from cloudcomm import *
+from cloudcomm import regist_device_on_cloud, unregist_device_from_cloud, notify_cloud
 
 __author__ = "Jose Requeijo Dias"
 
@@ -26,6 +30,11 @@ logger = logging.getLogger(__name__)
 ########################################################################################
 ### Device Resource
 class Device(Resource):
+    """
+        This is the Device CoAP resource.
+        It represents each Device endpoint (URI) for the Home Server.
+        It has all the Device informations and accessible sub-endpoints/childrens.
+    """
     def __init__(self, devices_list, device_id, name="", address="", type_id=0, services=[]):
 
         # initialize CoAP Resource
@@ -83,18 +92,34 @@ class Device(Resource):
         self.interface_type = "if1"
 
     def get_info(self):
+        """
+            This method returns a dictionary with all the device informations
+            represented by this CoAP resource
+        """
         return {"local_id": self.id, "name": self.name, "address": self.address,\
                 "device_type": self.device_type.type.id, "services": self.services.services,\
                 "state":self.state.get_simplified_info(), "universal_id":self.universal_id}
 
     def get_json(self):
+        """
+            This method returns a JSON representation with all the
+            device informations represented by this CoAP resource.
+        """
         return json.dumps(self.get_info())
 
     def get_payload(self):
-        return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
+        """
+            This method returns a valid CoAPthon payload representation
+            with all the device informations represented by this CoAP resource.
+        """
+        return (defines.Content_types[self.res_content_type], self.get_json())
 
     def delete(self):
-
+        """
+            This method deletes a Device, i.e. it deletes the device
+            CoAP representation and all its sub-endpoints/childrens CoAP representations,
+            'deleting' the full device from this server
+        """
         self.device_type.delete()
         self.state.delete()
         self.services.delete()
@@ -144,6 +169,11 @@ class Device(Resource):
 
 ## Devices List Resource
 class DevicesList(Resource):
+    """
+        This is the Devices List CoAP resource.
+        It represents the list of Devices endpoint (URI) for the Home Server.
+        It has all the Devices present on this Home Server.
+    """
     def __init__(self, server, devices=[]):
 
         super(DevicesList, self).__init__("DevicesList", server, visible=True,\
@@ -162,8 +192,35 @@ class DevicesList(Resource):
         self.resource_type = "DevicesList"
         self.interface_type = "if1"
 
-    def construct_devices_list(self, devices):
+    
 
+    def get_info(self):
+        """
+            This method returns a dictionary with the list of devices
+            present on this Home Server
+        """
+        return {"devices": self.get_devices_list()}
+
+    def get_json(self):
+        """
+            This method returns a JSON representation with the list of devices
+            present on this Home Server
+        """
+        return json.dumps(self.get_info())
+
+    def get_payload(self):
+        """
+            This method returns a valid CoAPthon payload representation
+            with  the list of devices present on this Home Server
+        """
+        return (defines.Content_types[self.res_content_type], self.get_json())
+
+    def construct_devices_list(self, devices):
+        """
+            This method builds a list of devices CoAP resource with the information
+            (list) given on the argument devices. This list must be a JSON object list
+            with each object representing a device
+        """
         res = {}
         for d in devices:
             id = d["device_id"]
@@ -171,18 +228,13 @@ class DevicesList(Resource):
                                         d["device_type"], d["services"])
 
         self.devices = res
-
-    def get_info(self):
-        return {"devices": self.get_devices_list()}
-
-    def get_json(self):
-        return json.dumps(self.get_info())
-
-    def get_payload(self):
-        return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
-
     def add_device(self, device):
-
+        """
+            This method adds a new device to the list of device represented by
+            the CoAP resource. The device to add is given on the 'device' argument
+            and it must be a dictionary representing the device (with the device
+            informations)
+        """
         existing_dev = self.check_existing_device(device["address"])
         if existing_dev is not None:
             raise AppError(defines.Codes.BAD_REQUEST, "Device with address ("+device["address"]\
@@ -199,11 +251,23 @@ class DevicesList(Resource):
         return res
 
     def remove_device(self, device_id):
-        #alterar este modo de remocao
+        """
+            This method removes a device from the list of devices represented
+            by the CoAP resource. The device to remove from the list is identified
+            by its ID with the 'device_id' argument.
+            CAUTION: this method may not delete the device CoAP representation from
+            memory, it only removes the device from the list of devices. To delete the
+            full device use the 'delete' method on the Device CoAP representation, which
+            by itself calls this method to remove the device from the list of devices.
+        """
         self.devices.pop(device_id)
         return True
 
     def get_devices_list(self):
+        """
+            This method returns the list of devices represented by this
+            CoAP resource.
+        """
         ret = []
         for ele in self.devices.values():
             d = ele.get_info()
@@ -213,7 +277,12 @@ class DevicesList(Resource):
         return ret
 
     def delete(self):
-
+        """
+            This method deletes the list of devices CoAP representation, as well as
+            all of its sub-endpoints/childrens (devices and their childrens) in a
+            recursive way.
+            It deletes all devices and the list endpoint from the server memory.
+        """
         for d in self.devices.values():
             d.delete()
 
@@ -221,6 +290,11 @@ class DevicesList(Resource):
         return True
 
     def check_existing_device(self, device_address):
+        """
+            This method checks if a device with the IP address given on the
+            first argument (device_address) is already present/registered
+            on the Home Server.
+        """
         if not validate_IPv4(device_address):
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid IP address ("+str(device_address)+")")
@@ -229,7 +303,7 @@ class DevicesList(Resource):
             if d.address == device_address:
                 return d.id
         return None
-    
+
     ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
@@ -265,6 +339,10 @@ class DevicesList(Resource):
 
 ## Device State Resource
 class DeviceState(Resource):
+    """
+        This is the Device State CoAP resource.
+        It represents the state endpoint (URI) of a given Device.
+    """
     def __init__(self, device):
 
         # initialize CoAP Resource
@@ -288,24 +366,52 @@ class DeviceState(Resource):
         self.resource_type = "DeviceState"
         self.interface_type = "if1"
 
+    
+
+    def get_info(self):
+        """
+            This method returns a dictionary with the detailed state information
+            correspondent to a given device
+        """
+        return {"device_id": self.device.id, "state": self.state}
+
+    def get_json(self):
+        """
+            This method returns a JSON representation with the detailed
+            state information correspondent to a given device
+        """
+        return json.dumps(self.get_info())
+
+    def get_payload(self):
+        """
+            This method returns a valid CoAPthon payload representation
+            with the detailed state information correspondent to a given device
+        """
+        return (defines.Content_types[self.res_content_type], self.get_json())
+
     def get_simplified_info(self):
+        """
+            This method returns a dictionary with the simplified state information
+            correspondent to a given device. This information is simplified because
+            the dictionary is formated like {"property1_name":"property1_value",
+            ..., "propertyN_name":"propertyN_value"}
+        """
         ret = {}
         for p in self.state:
             ret[p["name"]] = p["value"]
 
         return ret
-
-    def get_info(self):
-        return {"device_id": self.device.id, "state": self.state}
-
-    def get_json(self):
-        return json.dumps(self.get_info())
-
-    def get_payload(self):
-        return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
-
     def change_state(self, new_state, origin):
-
+        """
+            This method updates the state of a given device.
+            It recieves the first argument (new_state), which should be a
+            dictionary with a simplified representation of the new state, i.e.
+            {"property1_name":"property1_value",..., "propertyN_name":"propertyN_value"},
+            and where at least one of the Device's properties must be present.
+            The second argument (origin) must be the IP address from where the update
+            is being requested, in order to secure that only the device itself can update
+            RO properties.
+        """
         properties = self.device.device_type.type.properties
 
         keys = []
@@ -361,6 +467,9 @@ class DeviceState(Resource):
                             "Property id or name invalid format. Must be int or string.")
         return True
     def delete(self):
+        """
+            This method deletes the device state CoAP representation from the server.
+        """
         del self.device.server.root[self.root_uri]
         return True
 
@@ -406,6 +515,10 @@ class DeviceState(Resource):
 
 ## Device Type Resource
 class DeviceTypeResource(Resource):
+    """
+        This is the Device Type CoAP resource.
+        It represents the type endpoint (URI) of a given Device.
+    """
     def __init__(self, device):
 
         # initialize CoAP Resource
@@ -429,15 +542,30 @@ class DeviceTypeResource(Resource):
         self.interface_type = "if1"
 
     def get_info(self):
+        """
+            This method returns a dictionary with the device type information
+            correspondent to a given device
+        """
         return {"device_id": self.device.id, "device_type": self.type.get_info()}
 
     def get_json(self):
+        """
+            This method returns a JSON representation with the
+            device type information correspondent to a given device
+        """
         return json.dumps(self.get_info())
 
     def get_payload(self):
-        return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
+        """
+            This method returns a valid CoAPthon payload representation
+            with the device type information correspondent to a given device
+        """
+        return (defines.Content_types[self.res_content_type], self.get_json())
 
     def delete(self):
+        """
+            This method deletes the device type CoAP representation from the server.
+        """
         del self.device.server.root[self.root_uri]
         return True
 
@@ -447,6 +575,11 @@ class DeviceTypeResource(Resource):
         return self
 ## Device Services Resource
 class DeviceServicesResource(Resource):
+    """
+        This is the Device Services CoAP resource.
+        It represents the services endpoint (URI) of a given Device, i.e.
+        the services that the device subscribed.
+    """
     def __init__(self, device):
 
         # initialize CoAP Resource
@@ -472,15 +605,32 @@ class DeviceServicesResource(Resource):
 
 
     def get_info(self):
+        """
+            This method returns a dictionary with the services information
+            correspondent to a given device
+        """
         return {"device_id": self.device.id, "services": self.get_services()}
 
     def get_json(self):
+        """
+            This method returns a JSON representation with the
+            services information correspondent to a given device
+        """
         return json.dumps(self.get_info())
 
     def get_payload(self):
-        return (defines.Content_types[self.res_content_type], json.dumps(self.get_info()))
+        """
+            This method returns a valid CoAPthon payload representation
+            with the services information correspondent to a given device
+        """
+        return (defines.Content_types[self.res_content_type], self.get_json())
 
     def get_services(self):
+        """
+            This method returns the list of services subscribed by the device.
+            It auto-updates where some service is removed from the server and is
+            no longer supported by it, so the devices cannot use it anymore.
+        """
         aux = self.services
         for s in aux:
             if int(s) not in self.device.server.services.services.keys():
@@ -489,6 +639,9 @@ class DeviceServicesResource(Resource):
         return self.services
     
     def delete(self):
+        """
+            This method deletes the services CoAP representation from the server.
+        """
         del self.device.server.root[self.root_uri]
         return True
 

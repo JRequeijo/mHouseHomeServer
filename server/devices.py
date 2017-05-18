@@ -134,28 +134,29 @@ class Device(Resource):
         self.payload = self.get_payload()
         return self
 
-    def render_PUT(self, request):
+    def render_PUT_advanced(self, request, response):
         if(request.content_type is defines.Content_types.get("application/json")):
             try:
                 body = json.loads(request.payload)
             except:
                 logger.error("Request payload not json")
-                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
+                return error(self, response, defines.Codes.BAD_REQUEST,\
+                                    "Request content must be json formated")
 
             try:
                 self.name = body["name"]
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self)
+                return status(self, response, defines.Codes.CHANGED)
 
             except KeyError as err:
-                return error(defines.Codes.BAD_REQUEST,\
+                return error(self, response, defines.Codes.BAD_REQUEST,\
                             "Field ("+str(err.message)+") not found on request json body")
         else:
-            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+            return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                             "Content must be application/json")
 
-    def render_DELETE(self, request):
+    def render_DELETE_advanced(self, request, response):
         self.devices_list.remove_device(self.id)
 
         self.device_type.delete()
@@ -304,18 +305,45 @@ class DevicesList(Resource):
                 return d.id
         return None
 
+    def monitoring_devices(self):
+        """
+            This method checks if every device is still active, i.e.
+            it checks if a given device was accessed at least one time
+            on the interval between the current time and the current time
+            minus timeout.
+            If one device was not accessed at least one time in that interval
+            it is marked for deletion and then it is deleted.
+        """
+        timeout = settings.DEVICES_MONITORING_TIMEOUT
+        while True:
+            try:
+                now = time.time()
+                del_marked = []
+                for d in self.devices.itervalues():
+                    if (now-timeout) > d.last_access:
+                        logger.debug("Device ("+str(d.id)+") is down")
+                        del_marked.append(d)
+                        logger.debug("Device ("+str(d.id)+") marked for deletion")
+
+                for d in del_marked:
+                    d.delete()
+                    logger.debug("Device ("+str(d.id)+") Deleted")
+            except Exception as e:
+                print e.message
+
     ## CoAP Methods
     def render_GET(self, request):
         self.payload = self.get_payload()
         return self
 
-    def render_POST(self, request):
+    def render_POST_advanced(self, request, response):
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)
             except:
                 logger.error("Request payload not json")
-                return error(defines.Codes.BAD_REQUEST, "Body content not properly json formated")
+                return error(self, response, defines.Codes.BAD_REQUEST,\
+                                    "Body content not properly json formated")
             try:
                 check_on_body(body, ["name", "address", "device_type", "services"])
 
@@ -325,16 +353,16 @@ class DevicesList(Resource):
                     thread.start_new_thread(regist_device_on_cloud, (dev,))
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CREATED, self)
+                return status(self, response, defines.Codes.CREATED)
 
             except AppError as err:
                 logger.error("ERROR: "+err.msg)
-                return error(err.code, err.msg)
+                return error(self, response, err.code, err.msg)
             except AppHTTPError as err:
                 logger.error("ERROR: "+err.msg)
-                return error(err.code, err.msg)
+                return error(self, response, err.code, err.msg)
         else:
-            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+            return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                                     "Content must be application/json")
 
 ## Device State Resource
@@ -478,14 +506,14 @@ class DeviceState(Resource):
         self.payload = self.get_payload()
         return self
 
-    def render_PUT(self, request):
+    def render_PUT_advanced(self, request, response):
         if request.content_type is defines.Content_types.get("application/json"):
             origin = request.source[0]
             try:
                 body = json.loads(request.payload)
             except:
                 logger.error("Request payload not json")
-                return error(defines.Codes.BAD_REQUEST,\
+                return error(self, response, defines.Codes.BAD_REQUEST,\
                             "Request payload not properly formated json")
 
             try:
@@ -502,15 +530,15 @@ class DeviceState(Resource):
                         thread.start_new_thread(notify_cloud, (self,))
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self)
+                return status(self, response, defines.Codes.CHANGED)
 
             except AppError as err:
-                return error(err.code, err.msg)
+                return error(self, response, err.code, err.msg)
             except:
                 print "FATAL UNKNOWN ERROR"
                 return defines.Codes.INTERNAL_SERVER_ERROR
         else:
-            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+            return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                         "Request content must be application/json")
 
 ## Device Type Resource
@@ -650,12 +678,13 @@ class DeviceServicesResource(Resource):
         self.payload = self.get_payload()
         return self
 
-    def render_PUT(self, request):
+    def render_PUT_advanced(self, request, response):
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)
             except:
-                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
+                return error(self, response, defines.Codes.BAD_REQUEST,\
+                                    "Request content must be json formated")
 
             try:
                 if self.device.server.services.validate_services(body):
@@ -664,24 +693,25 @@ class DeviceServicesResource(Resource):
                     for n in body:
                         self.services.append(int(n))
                 else:
-                    return error(defines.Codes.BAD_REQUEST,\
+                    return error(self, response, defines.Codes.BAD_REQUEST,\
                                     "Services provided are not valid")
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self)
+                return status(self, response, defines.Codes.CHANGED)
             except:
-                return error(defines.Codes.BAD_REQUEST,\
+                return error(self, response, defines.Codes.BAD_REQUEST,\
                 "Request content must specify a list of service ids in json format")
         else:
-            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+            return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                         "Request content format not application/json")
 
-    def render_POST(self, request):
+    def render_POST_advanced(self, request, response):
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)
             except:
-                return error(defines.Codes.BAD_REQUEST, "Request content must be json formated")
+                return error(self, response, defines.Codes.BAD_REQUEST,\
+                                    "Request content must be json formated")
 
             try:
                 if self.device.server.services.validate_services(body):
@@ -690,19 +720,19 @@ class DeviceServicesResource(Resource):
                         if serv not in self.services:
                             self.services.append(serv)
                 else:
-                    return error(defines.Codes.BAD_REQUEST,\
+                    return error(self, response, defines.Codes.BAD_REQUEST,\
                                     "Services provided are not valid")
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self)
+                return status(self, response, defines.Codes.CHANGED)
             except:
-                return error(defines.Codes.BAD_REQUEST,\
+                return error(self, response, defines.Codes.BAD_REQUEST,\
                 "Request content must specify a list of service ids in json format")
         else:
-            return error(defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
+            return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                         "Request content format not application/json")
 
-    def render_DELETE(self, request):
+    def render_DELETE_advanced(self, request, response):
         try:
             query = request.uri_query
             aux = [query]
@@ -711,12 +741,12 @@ class DeviceServicesResource(Resource):
             try:
                 self.services.remove(id)
             except:
-                return error(defines.Codes.NOT_FOUND,\
+                return error(self, response, defines.Codes.NOT_FOUND,\
                             "Service with id ("+str(id)+") is not attributed for this device")
 
             self.payload = self.get_payload()
-            return status(defines.Codes.DELETED, self)
+            return status(self, response, defines.Codes.DELETED)
         except:
-            return error(defines.Codes.BAD_REQUEST,\
+            return error(self, response, defines.Codes.BAD_REQUEST,\
             "Request query must specify an id of the service to remove")
 

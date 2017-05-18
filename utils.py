@@ -6,6 +6,8 @@ import json
 import socket
 
 from coapthon import defines
+from coapthon.resources.resource import Resource
+from coapthon.messages.response import Response
 
 __author__ = "Jose Requeijo Dias"
 
@@ -50,26 +52,42 @@ class AppHTTPError(AppError):
         if msg is not None:
             self.msg = msg
 
-def error(error_tup, info):
+def error(resource, response, error_tup, info):
     """
-        This function returns a RESTful JSON error representation.
-        It always receive a tuple with an error code and a status line, and also
-        some info about what happened to raise this error.
-        It returns a tuple with the error code and a sub-tuple specifying that
-        the content format is JSON and then the error JSON payload
+        This function returns a RESTful JSON error representation that
+        is valid to process by the CoAPthon library.
+        It always receive the resource where the error is being raised,
+        the response object that will be used to the CoAP response, a tuple
+        with an error code and a status line, and also some info about what
+        happened to trigger the raise of this error. It returns a valid response
+        representation to process by the CoAPthon library.
     """
+    assert isinstance(resource, Resource)
+    assert isinstance(response, Response)
+
     payload = json.dumps({"error_code": code_convert(error_tup[0]),\
                             "status_line": error_tup[1], "error_msg": info})
+    response.payload = payload
+    response.code = error_tup[0]
+    response.content_type = defines.Content_types["application/json"]
+    return resource, response
 
-    return (error_tup[0], (defines.Content_types["application/json"], payload))
+def status(resource, response, code):
+    """
+        This function returns a RESTful JSON status success representation that
+        is valid to process by the CoAPthon library.
+        It always receive the resource where the successful action is being done,
+        the response object that will be used to the CoAP response and tuple
+        with the success code and status line. It returns a valid response
+        representation to process by the CoAPthon library.
+    """
+    assert isinstance(resource, Resource)
+    assert isinstance(response, Response)
 
-def status(code, payload):
-    """
-        This function returns a RESTful JSON status representation.
-        It always receive a tuple with a code and a status line, and also
-        the payload to return
-    """
-    return (code[0], payload)
+    response.payload = resource.payload
+    response.code = code[0]
+    response.content_type = resource.actual_content_type
+    return resource, response
 
 def code_convert(code):
     """

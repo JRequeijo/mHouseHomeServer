@@ -203,18 +203,19 @@ class HomeServerServices(Resource):
         self.payload = self.get_payload()
         return self
 
-    def render_PUT(self, request):
+    def render_PUT_advanced(self, request, response):
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)
             except:
                 logger.error("Request payload not json")
-                return error(defines.Codes.BAD_REQUEST, "Body content not properly json formated")
+                return error(self, response, defines.Codes.BAD_REQUEST,\
+                                    "Body content not properly json formated")
 
             try:
                 self.update_server_services(body)
 
                 self.payload = self.get_payload()
-                return status(defines.Codes.CHANGED, self)
+                return status(self, response, defines.Codes.CHANGED)
             except AppError as e:
-                return error(e.code, e.msg)
+                return error(self, response, e.code, e.msg)

@@ -48,11 +48,12 @@ COAP_MULTICAST = False
 
 
 """
-Specification of the default timeout for the requests between the proxy and the
-CoAP Server.
+Specification of the default timeouts for the requests between the proxy and the
+CoAP Server and for the monitoring of devices by the Home Server. All timeouts
+are values on seconds.
 """
 COMM_TIMEOUT = 2
-
+DEVICES_MONITORING_TIMEOUT = 3600
 
 """
 Specification of the cloud service URL and the working offline setting for the

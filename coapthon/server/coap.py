@@ -1,10 +1,8 @@
-import logging.config
+import logging
 import random
 import socket
 import struct
 import threading
-
-import os
 
 from coapthon import defines
 from coapthon.layers.blocklayer import BlockLayer
@@ -17,28 +15,27 @@ from coapthon.messages.request import Request
 from coapthon.messages.response import Response
 from coapthon.resources.resource import Resource
 from coapthon.serializer import Serializer
-from coapthon.utils import Tree, create_logging
+from coapthon.utils import Tree
 
-
-from server.devices import *
-import time
 
 __author__ = 'Giacomo Tanganelli'
 
+
 logger = logging.getLogger(__name__)
+
 
 class CoAP(object):
     """
     Implementation of the CoAP server
     """
-    def __init__(self, server_address, multicast=False, starting_mid=None, sock=None):
+    def __init__(self, server_address, multicast=False, starting_mid=None, sock=None, cb_ignore_listen_exception=None):
         """
         Initialize the server.
-
         :param server_address: Server address for incoming connections
         :param multicast: if the ip is a multicast address
         :param starting_mid: used for testing purposes
         :param sock: if a socket has been created externally, it can be used directly
+        :param cb_ignore_listen_exception: Callback function to handle exception raised during the socket listen operation
         """
         self.stopped = threading.Event()
         self.stopped.clear()
@@ -61,6 +58,7 @@ class CoAP(object):
 
         self.server_address = server_address
         self.multicast = multicast
+        self._cb_ignore_listen_exception = cb_ignore_listen_exception
 
         addrinfo = socket.getaddrinfo(self.server_address[0], None)[0]
 
@@ -117,7 +115,6 @@ class CoAP(object):
     def purge(self):
         """
         Clean old transactions
-
         """
         while not self.stopped.isSet():
             self.stopped.wait(timeout=defines.EXCHANGE_LIFETIME)
@@ -126,12 +123,8 @@ class CoAP(object):
     def listen(self, timeout=10):
         """
         Listen for incoming messages. Timeout is used to check if the server must be switched off.
-
         :param timeout: Socket Timeout in seconds
         """
-        mon_t = threading.Thread(target=self.monitoring_devices, args=(3600,))
-        mon_t.start()
-
         self._socket.settimeout(float(timeout))
         while not self.stopped.isSet():
             try:
@@ -140,6 +133,11 @@ class CoAP(object):
                     client_address = (client_address[0], client_address[1])
             except socket.timeout:
                 continue
+            except Exception as e:
+                if self._cb_ignore_listen_exception is not None and callable(self._cb_ignore_listen_exception):
+                    if self._cb_ignore_listen_exception(e, self):
+                        continue
+                raise
             try:
                 serializer = Serializer()
                 message = serializer.deserialize(data, client_address)
@@ -179,36 +177,23 @@ class CoAP(object):
                         with transaction:
                             self._blockLayer.receive_empty(message, transaction)
                             self._observeLayer.receive_empty(message, transaction)
-                
+
             except RuntimeError:
                 print "Exception with Executor"
-
-            try:
-                now = time.time()
-                for key, d in self.root["/devices"].devices.iteritems():
-                    if d.address == client_address[0]:
-                        d.last_access = now
-            except Exception as e:
-                print e.message
-
-
         self._socket.close()
 
     def close(self):
         """
         Stop the server.
-
         """
         logger.info("Stop server")
         self.stopped.set()
         for event in self.to_be_stopped:
             event.set()
-        self._socket.close()
 
     def receive_request(self, transaction):
         """
         Handle requests coming from the udp socket.
-
         :param transaction: the transaction created to manage the request
         """
 
@@ -229,17 +214,8 @@ class CoAP(object):
             self._requestLayer.receive_request(transaction)
 
             if transaction.resource is not None and transaction.resource.changed:
-                if isinstance(transaction.resource, DeviceState):
-                    if transaction.request.source[0] != transaction.resource.device.address:
-                        self.notify_owner(transaction.resource)
-                        transaction.resource.changed = False
-                    else:
-                        self.notify_others(transaction.resource)
-                        transaction.resource.changed = False
-                else:
-                    self.notify(transaction.resource)
-                    transaction.resource.changed = False
-
+                self.notify(transaction.resource)
+                transaction.resource.changed = False
             elif transaction.resource is not None and transaction.resource.deleted:
                 self.notify(transaction.resource)
                 transaction.resource.deleted = False
@@ -260,7 +236,6 @@ class CoAP(object):
     def send_datagram(self, message):
         """
         Send a message through the udp socket.
-
         :type message: Message
         :param message: the message to send
         """
@@ -277,7 +252,6 @@ class CoAP(object):
     def add_resource(self, path, resource):
         """
         Helper function to add resources to the resource directory during server initialization.
-
         :param path: the path for the new created resource
         :type resource: Resource
         :param resource: the resource to be added
@@ -305,7 +279,6 @@ class CoAP(object):
     def _start_retransmission(self, transaction, message):
         """
         Start the retransmission task.
-
         :type transaction: Transaction
         :param transaction: the transaction that owns the message that needs retransmission
         :type message: Message
@@ -323,7 +296,6 @@ class CoAP(object):
     def _retransmit(self, transaction, message, future_time, retransmit_count):
         """
         Thread function to retransmit the message in the future
-
         :param transaction: the transaction that owns the message that needs retransmission
         :param message: the message that needs the retransmission task
         :param future_time: the amount of time to wait before a new attempt
@@ -356,7 +328,6 @@ class CoAP(object):
     def _start_separate_timer(self, transaction):
         """
         Start a thread to handle separate mode.
-
         :type transaction: Transaction
         :param transaction: the transaction that is in processing
         :rtype : the Timer object
@@ -369,7 +340,6 @@ class CoAP(object):
     def _stop_separate_timer(timer):
         """
         Stop the separate Thread if an answer has been already provided to the client.
-
         :param timer: The Timer object
         """
         timer.cancel()
@@ -377,7 +347,6 @@ class CoAP(object):
     def _send_ack(self, transaction):
         """
         Sends an ACK message for the request.
-
         :param transaction: the transaction that owns the request
         """
 
@@ -391,13 +360,11 @@ class CoAP(object):
     def notify(self, resource):
         """
         Notifies the observers of a certain resource.
-
         :param resource: the resource
         """
         observers = self._observeLayer.notify(resource)
         logger.debug("Notify")
         for transaction in observers:
-            logger.debug("Notifying: "+transaction.request.source[0])
             with transaction:
                 transaction.response = None
                 transaction = self._requestLayer.receive_request(transaction)
@@ -409,67 +376,3 @@ class CoAP(object):
                         self._start_retransmission(transaction, transaction.response)
 
                     self.send_datagram(transaction.response)
-    
-    def notify_owner(self, resource):
-        """
-        Notifies the observers of a certain resource.
-
-        :param resource: the resource
-        """
-        observers = self._observeLayer.notify(resource)
-        logger.debug("Notifying Owner")
-        for transaction in observers:
-            if transaction.request.source[0] == resource.device.address:
-                logger.debug("Notifying: "+transaction.request.source[0])
-                with transaction:
-                    transaction.response = None
-                    transaction = self._requestLayer.receive_request(transaction)
-                    transaction = self._observeLayer.send_response(transaction)
-                    transaction = self._blockLayer.send_response(transaction)
-                    transaction = self._messageLayer.send_response(transaction)
-                    if transaction.response is not None:
-                        if transaction.response.type == defines.Types["CON"]:
-                            self._start_retransmission(transaction, transaction.response)
-
-                        self.send_datagram(transaction.response)
-                        break
-
-    def notify_others(self, resource):
-        """
-        Notifies the observers of a certain resource.
-
-        :param resource: the resource
-        """
-        observers = self._observeLayer.notify(resource)
-        logger.debug("Notifying Others")
-        for transaction in observers:
-            if transaction.request.source[0] != resource.device.address:
-                logger.debug("Notifying: "+transaction.request.source[0])
-                with transaction:
-                    transaction.response = None
-                    transaction = self._requestLayer.receive_request(transaction)
-                    transaction = self._observeLayer.send_response(transaction)
-                    transaction = self._blockLayer.send_response(transaction)
-                    transaction = self._messageLayer.send_response(transaction)
-                    if transaction.response is not None:
-                        if transaction.response.type == defines.Types["CON"]:
-                            self._start_retransmission(transaction, transaction.response)
-
-                        self.send_datagram(transaction.response)
-
-    def monitoring_devices(self, timeout):
-        while True:
-            try:
-                now = time.time()
-                del_marked = []
-                for key, d in self.root["/devices"].devices.iteritems():
-                    if (now-timeout) > d.last_access:
-                        logger.debug("Device ("+str(d.id)+") is down")
-                        del_marked.append(d)
-                        logger.debug("Device ("+str(d.id)+") marked for deletion")
-
-                for d in del_marked:
-                    d.delete()
-                    logger.debug("Device ("+str(d.id)+") Deleted")
-            except Exception as e:
-                print e.message

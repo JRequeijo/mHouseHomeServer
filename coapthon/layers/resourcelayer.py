@@ -77,45 +77,31 @@ class ResourceLayer(object):
                 return transaction
 
         if isinstance(resource, Resource):
-            print "FOI NORMAL"
-            if resource is resource_node:
-                transaction.response.code = defines.Codes.CHANGED.number
-            else:
-                transaction.response.code = defines.Codes.CREATED.number
+            pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
-            if resource in defines.Codes.LIST:
-                if resource < defines.Codes.ERROR_LOWER_BOUND:
-                    print "FOI NORMAL COM CODIGO"
-                    aux = resource
-                    resource = callback
-                    callback = aux
-                    transaction.response.code = callback
-                else:
-                    print "FOI ERROR"
-                    transaction.response.code = resource
-                    transaction.response.payload = callback
-                    return transaction
-            else:
-                resource = self._handle_separate(transaction, callback)
-                if not isinstance(resource, Resource):  # pragma: no cover
-                    transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
-                    return transaction
+            resource = self._handle_separate(transaction, callback)
+            if not isinstance(resource, Resource):  # pragma: no cover
+                transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
+                return transaction
         else:  # pragma: no cover
             # Handle error
             transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
             return transaction
-        
-        assert(isinstance(resource, Resource))
+
         if resource.path is None:
             resource.path = path
         resource.observe_count = resource_node.observe_count
 
-
+        if resource is resource_node:
+            transaction.response.code = defines.Codes.CHANGED.number
+        else:
+            transaction.response.code = defines.Codes.CREATED.number
         resource.changed = True
         resource.observe_count += 1
         transaction.resource = resource
 
+        assert(isinstance(resource, Resource))
         if resource.etag is not None:
             transaction.response.etag = resource.etag
 
@@ -123,15 +109,8 @@ class ResourceLayer(object):
 
         if resource.location_query is not None and len(resource.location_query) > 0:
             transaction.response.location_query = resource.location_query
-        
-        try:
-            transaction.response.payload = resource.payload
-            if resource.actual_content_type is not None \
-                    and resource.actual_content_type != defines.Content_types["text/plain"]:
-                transaction.response.content_type = resource.actual_content_type
-        except KeyError:
-            transaction.response.code = defines.Codes.NOT_ACCEPTABLE.number
-            return transaction.response
+
+        transaction.response.payload = None
 
         self._parent.root[resource.path] = resource
 
@@ -189,27 +168,13 @@ class ResourceLayer(object):
                 transaction.response.code = defines.Codes.METHOD_NOT_ALLOWED.number
                 return transaction
         if isinstance(resource, Resource):
-            print "FOI NORMAL"
-            transaction.response.code = defines.Codes.CREATED.number
+            pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
-            if resource in defines.Codes.LIST:
-                if resource < defines.Codes.ERROR_LOWER_BOUND:
-                    print "FOI NORMAL COM CODIGO"
-                    aux = resource
-                    resource = callback
-                    callback = aux
-                    transaction.response.code = callback
-                else:
-                    print "FOI ERROR"
-                    transaction.response.code = resource
-                    transaction.response.payload = callback
-                    return transaction
-            else:
-                resource = self._handle_separate(transaction, callback)
-                if not isinstance(resource, Resource):  # pragma: no cover
-                    transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
-                    return transaction
+            resource = self._handle_separate(transaction, callback)
+            if not isinstance(resource, Resource):  # pragma: no cover
+                transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
+                return transaction
         else:  # pragma: no cover
             # Handle error
             transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
@@ -225,22 +190,17 @@ class ResourceLayer(object):
         if resource.location_query is not None and len(resource.location_query) > 0:
             transaction.response.location_query = resource.location_query
 
+        transaction.response.code = defines.Codes.CREATED.number
+        transaction.response.payload = None
+
         assert (isinstance(resource, Resource))
         if resource.etag is not None:
             transaction.response.etag = resource.etag
         if resource.max_age is not None:
             transaction.response.max_age = resource.max_age
-        
-        try:
-            transaction.response.payload = resource.payload
-            if resource.actual_content_type is not None \
-                    and resource.actual_content_type != defines.Content_types["text/plain"]:
-                transaction.response.content_type = resource.actual_content_type
-        except KeyError:
-            transaction.response.code = defines.Codes.NOT_ACCEPTABLE.number
-            return transaction.response
 
         resource.changed = True
+
         transaction.resource = resource
 
         self._parent.root[resource.path] = resource
@@ -269,7 +229,7 @@ class ResourceLayer(object):
         lp = path
         parent_resource = self._parent.root[imax]
         if parent_resource.allow_children:
-            return self.add_resource(transaction, parent_resource, lp)
+                return self.add_resource(transaction, parent_resource, lp)
         else:
             transaction.response.code = defines.Codes.METHOD_NOT_ALLOWED.number
             return transaction
@@ -335,27 +295,13 @@ class ResourceLayer(object):
                 return transaction
 
         if isinstance(resource, Resource):
-            print "FOI NORMAL"
-            transaction.response.code = defines.Codes.CHANGED.number
+            pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
-            if resource in defines.Codes.LIST:
-                if resource < defines.Codes.ERROR_LOWER_BOUND:
-                    print "FOI NORMAL COM CODIGO"
-                    aux = resource
-                    resource = callback
-                    callback = aux
-                    transaction.response.code = callback
-                else:
-                    print "FOI ERROR"
-                    transaction.response.code = resource
-                    transaction.response.payload = callback
-                    return transaction
-            else:
-                resource = self._handle_separate(transaction, callback)
-                if not isinstance(resource, Resource):  # pragma: no cover
-                    transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
-                    return transaction
+            resource = self._handle_separate(transaction, callback)
+            if not isinstance(resource, Resource):  # pragma: no cover
+                transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
+                return transaction
         else:  # pragma: no cover
             # Handle error
             transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
@@ -364,16 +310,9 @@ class ResourceLayer(object):
         if resource.etag is not None:
             transaction.response.etag = resource.etag
 
-        try:
-            transaction.response.payload = resource.payload
-            if resource.actual_content_type is not None \
-                    and resource.actual_content_type != defines.Content_types["text/plain"]:
-                transaction.response.content_type = resource.actual_content_type
-        except KeyError:
-            transaction.response.code = defines.Codes.NOT_ACCEPTABLE.number
-            return transaction.response
+        transaction.response.code = defines.Codes.CHANGED.number
 
-        transaction.response.payload = resource.payload
+        transaction.response.payload = None
 
         assert (isinstance(resource, Resource))
         if resource.etag is not None:
@@ -456,38 +395,14 @@ class ResourceLayer(object):
             pass
         elif isinstance(ret, tuple) and len(ret) == 2:
             resource, callback = ret
-            if resource in defines.Codes.LIST:
-                if resource < defines.Codes.ERROR_LOWER_BOUND:
-                    print "FOI NORMAL COM CODIGO"
-                    transaction.response.code = resource
-                    transaction.response.payload = callback.payload
-
-                    try:
-                        transaction.response.payload = callback.payload
-                        if callback.actual_content_type is not None \
-                            and callback.actual_content_type != defines.Content_types["text/plain"]:
-                            transaction.response.content_type = callback.actual_content_type
-                    except KeyError:
-                        transaction.response.code = defines.Codes.NOT_ACCEPTABLE.number
-                        return transaction.response
-
-                    transaction.resource.deleted = True
-                    return transaction
-                else:
-                    print "FOI ERROR"
-                    transaction.response.code = resource
-                    transaction.response.payload = callback
-                    return transaction
-            else:
-                ret = self._handle_separate(transaction, callback)
-                if not isinstance(ret, bool):  # pragma: no cover
-                    transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
-                    return transaction
+            ret = self._handle_separate(transaction, callback)
+            if not isinstance(ret, bool):  # pragma: no cover
+                transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
+                return transaction
         else:  # pragma: no cover
             # Handle error
             transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
             return transaction
-
         if ret:
             del self._parent.root[path]
             transaction.response.code = defines.Codes.DELETED.number
@@ -550,27 +465,13 @@ class ResourceLayer(object):
                 return transaction
 
         if isinstance(resource, Resource):
-            print "FOI NORMAL"
-            transaction.response.code = defines.Codes.CONTENT.number
+            pass
         elif isinstance(resource, tuple) and len(resource) == 2:
             resource, callback = resource
-            if resource in defines.Codes.LIST:
-                if resource < defines.Codes.ERROR_LOWER_BOUND:
-                    print "FOI NORMAL COM CODIGO"
-                    aux = resource
-                    resource = callback
-                    callback = aux
-                    transaction.response.code = callback
-                else:
-                    print "FOI ERROR"
-                    transaction.response.code = resource
-                    transaction.response.payload = callback
-                    return transaction
-            else:
-                resource = self._handle_separate(transaction, callback)
-                if not isinstance(resource, Resource):  # pragma: no cover
-                    transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
-                    return transaction
+            resource = self._handle_separate(transaction, callback)
+            if not isinstance(resource, Resource):  # pragma: no cover
+                transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
+                return transaction
         else:  # pragma: no cover
             # Handle error
             transaction.response.code = defines.Codes.INTERNAL_SERVER_ERROR.number
@@ -578,6 +479,8 @@ class ResourceLayer(object):
 
         if resource.etag in transaction.request.etag:
             transaction.response.code = defines.Codes.VALID.number
+        else:
+            transaction.response.code = defines.Codes.CONTENT.number
 
         try:
             transaction.response.payload = resource.payload
@@ -594,7 +497,6 @@ class ResourceLayer(object):
         if resource.max_age is not None:
             transaction.response.max_age = resource.max_age
 
-        resource.changed = False
         transaction.resource = resource
 
         return transaction

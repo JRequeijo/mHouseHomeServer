@@ -1,4 +1,3 @@
-
 import json
 import sys
 import logging
@@ -21,10 +20,6 @@ logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers
 
 logger = logging.getLogger("proxylog")
 
-if not register():
-    sys.exit()
-
-debug(settings.DEBUG)
 
 def log_to_logger(fn):
     '''
@@ -519,23 +514,14 @@ def errorHandler(error):
     return send_response(json.dumps({"error_code": error.status_code, "error_msg": error.body}))
 
 #
-##### Initialization
-def initialize_home_server():
-    # try:
-        f = open(settings.SERVER_CONFIG_FILE, "r")
-        server_conf = json.load(f)
-
-        server = HomeServer(server_conf["id"], server_conf["name"], server_conf["address"])
-        server.start()
-    # except:
-    #     logger.error("ERROR: Unable to open server configuration file. Server probably not registed.")
-    #     sys.exit()
-
-#
 ####### Initialize Home Server ########
-home_server_proc = Process(target=initialize_home_server)
-home_server_proc.start()
-run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
+def run_proxy():
+    if not register():
+        sys.exit(4)
 
-home_server_proc.join()
+    debug(settings.DEBUG)
+    run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
+
+if __name__ == "__main__":
+    run_proxy()
 

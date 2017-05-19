@@ -2,7 +2,11 @@ import json
 import sys
 import logging
 import thread
+import threading
+import time
+import os
 # import getopt
+import psutil
 
 from multiprocessing import Process
 from functools import wraps
@@ -11,10 +15,13 @@ from bottle import Bottle, run, request, response, abort, debug
 from coapthon import defines
 
 import settings
+import ps_socket_utils as sock_util
 from proxy.register import register
 from proxy.communicator import Communicator
 from server.homeserver import HomeServer
 from utils import AppError, coap2http_code
+
+from server_main import run_home_server
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
@@ -515,13 +522,78 @@ def errorHandler(error):
 
 #
 ####### Initialize Home Server ########
-def run_proxy():
+def register_homeserver():
     if not register():
         sys.exit(4)
+
+def monitor_coapserver(server_proc, term_event, term_lock_proxy, term_lock_server):
+
+    printed = False
+    while True:
+        if server_proc.is_running():
+            pass
+        else:
+            print "SERVER is DEAD. Restarting"
+            server_proc = Process(target=run_home_server, args=(psutil.Process(), term_event, term_lock_proxy, term_lock_server,))
+            server_proc.start()
+            print "SERVER PROCCESS: "+str(server_proc.pid)
+            print "SERVER ALIVE AGAIN"
+            printed = False
+
+        if term_event.isSet():
+            term_lock_server.acquire()
+            server_proc.terminate()
+            break
+        else:
+            time.sleep(2)
+
+    term_lock_server.release()
+
+def command_line_listener(term_event, term_lock_proxy, term_lock_server):
+    sock = sock_util.create_server_socket(sock_util.SERVER_ADDRESS)
+
+    # Bind the socket to the port
+    # print >>sys.stderr, 'starting up on %s' % server_address
+    sock.bind(sock_util.SERVER_ADDRESS)
+
+    # Listen for incoming connections
+    sock.listen(1)
+    terminate = False
+    while not terminate:
+        # Wait for a connection
+        # print >>sys.stderr, 'waiting for a connection'
+        connection, client_address = sock.accept()
+        try:
+            # print >>sys.stderr, 'connection from', client_address
+            code = sock_util.receive_code_message(connection)
+            if code == sock_util.DOWN:
+                print "EXITING"
+                term_event.set()
+                terminate = True
+        finally:
+            # Clean up the connection
+            connection.close()
+
+    term_lock_proxy.acquire()
+    term_lock_server.acquire()
+    print "EXIT"
+    term_lock_proxy.release()
+    term_lock_server.release()
+    sys.exit(0)
+
+def run_proxy(server_proc, term_event, term_lock_proxy, term_lock_server):
+
+    coapserver_mon_thr = threading.Thread(target=monitor_coapserver, args=(server_proc, term_event,\
+                                                         term_lock_proxy, term_lock_server,))
+    coapserver_mon_thr.start()
+
+    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(term_event, term_lock_proxy, term_lock_server))
+    command_line_listener_thr.start()
+
 
     debug(settings.DEBUG)
     run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
 
-if __name__ == "__main__":
-    run_proxy()
+# if __name__ == "__main__":
+#     run_proxy()
 

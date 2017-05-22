@@ -15,39 +15,36 @@ import proxy_main
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 
-def monitor_proxy(proxy_proc, term_event, term_lock_proxy, term_lock_server):
+def monitor_proxy(proxy_proc, term_event, server_term_event):
 
     printed = False
     while True:
         if proxy_proc.is_running():
-            pass
+            print "Proxy is ALIVE"
         else:
-            print "EXIT: "+str(proxy_proc.exitcode)
-            if proxy_proc.exitcode != 4:
-                print "PROXY is DEAD. Restarting"
-                proxy_proc = Process(target=proxy_main.run_proxy, args=(psutil.Process(), term_event, term_lock_server,))
-                proxy_proc.start()
-                print "PROXY PROCCESS: "+str(proxy_proc.pid)
-                print "PROXY ALIVE AGAIN"
-                printed = False
-            else:
-                term_event.set()
-                term_lock_proxy.acquire()
-                break
+            # print "EXIT: "+str(proxy_proc.exitcode)
+            # if proxy_proc.exitcode != 4:
+            print "PROXY is DEAD. Restarting"
+            new_proxy_proc = Process(target=proxy_main.run_proxy, args=(psutil.Process(), term_event, server_term_event,))
+            new_proxy_proc.start()
 
-        if term_event.isSet():
-            term_lock_proxy.acquire()
-            proxy_proc.terminate()
-            break
-        else:
-            time.sleep(2)
+            proxy_proc = psutil.Process(new_proxy_proc.pid)
 
-    term_lock_proxy.release()
+            print "PROXY PROCCESS: "+str(new_proxy_proc.pid)
+            print "PROXY ALIVE AGAIN"
+            printed = False
+            # else:
+            #     term_event.set()
+            #     term_lock_proxy.acquire()
+            #     break
 
-def run_home_server(proxy_proc, term_event, term_lock_proxy, term_lock_server):
+        time.sleep(2)
 
-    proxy_mon_thr = threading.Thread(target=monitor_proxy, args=(proxy_proc, term_event,\
-                                                         term_lock_proxy, term_lock_server,))
+    sys.exit(0)
+
+def run_home_server(proxy_proc, term_event, server_term_event):
+
+    proxy_mon_thr = threading.Thread(target=monitor_proxy, args=(proxy_proc, term_event, server_term_event,))
     proxy_mon_thr.start()
 
     try:

@@ -26,16 +26,16 @@ def usage():
 def home_server_main_process():
 
     term_event = threading.Event()
-    term_lock_proxy = threading.Lock()
-    term_lock_server = threading.Lock()
+    server_term_event = threading.Event()
 
     proxy_main.register_homeserver()
 
-    server_proc = Process(target=server_main.run_home_server, args=(psutil.Process(), term_event, term_lock_proxy, term_lock_server,))
+    server_proc = Process(target=server_main.run_home_server, args=(psutil.Process(), term_event, server_term_event,))
     server_proc.start()
+    print "PROXY PROCESS: "+str(os.getpid())
     print "SERVER PROCCESS: "+str(server_proc.pid)
 
-    proxy_main.run_proxy(psutil.Process(server_proc.pid), term_event, term_lock_proxy, term_lock_server)
+    proxy_main.run_proxy(psutil.Process(server_proc.pid), term_event, server_term_event)
 
 #
 #

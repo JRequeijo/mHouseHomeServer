@@ -124,11 +124,15 @@ def get_my_ip():
     """
         This function get the local IPv4 address for the HomeServer
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.connect(("coap.technology", 80))
-    myip = sock.getsockname()[0]
-    sock.close()
-    return myip
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.connect(("coap.technology", 80))
+        myip = sock.getsockname()[0]
+        sock.close()
+        return myip
+    except:
+        print "ERROR: Unable to connect to Network"
+        raise AppError(500, "Unable to connect to Network")
 
 def check_on_body(body, keys):
     """

@@ -526,30 +526,35 @@ def register_homeserver():
     if not register():
         sys.exit(4)
 
-def monitor_coapserver(server_proc, term_event, term_lock_proxy, term_lock_server):
+def monitor_coapserver(server_proc, term_event, server_term_event):
 
     printed = False
     while True:
         if server_proc.is_running():
-            pass
+            print "Server is ALIVE"
         else:
             print "SERVER is DEAD. Restarting"
-            server_proc = Process(target=run_home_server, args=(psutil.Process(), term_event, term_lock_proxy, term_lock_server,))
-            server_proc.start()
-            print "SERVER PROCCESS: "+str(server_proc.pid)
+            new_server_proc = Process(target=run_home_server, args=(psutil.Process(), term_event, server_term_event,))
+            new_server_proc.start()
+
+            server_proc = psutil.Process(new_server_proc.pid)
+
+            print "SERVER PROCCESS: "+str(new_server_proc.pid)
             print "SERVER ALIVE AGAIN"
             printed = False
 
         if term_event.isSet():
-            term_lock_server.acquire()
+            print "ending server monitor"
+            print "Ending Server Process"
             server_proc.terminate()
             break
         else:
             time.sleep(2)
 
-    term_lock_server.release()
+    server_term_event.set()
+    sys.exit(0)
 
-def command_line_listener(term_event, term_lock_proxy, term_lock_server):
+def command_line_listener(proxy_proc, term_event, server_term_event):
     sock = sock_util.create_server_socket(sock_util.SERVER_ADDRESS)
 
     # Bind the socket to the port
@@ -574,22 +579,19 @@ def command_line_listener(term_event, term_lock_proxy, term_lock_server):
             # Clean up the connection
             connection.close()
 
-    term_lock_proxy.acquire()
-    term_lock_server.acquire()
-    print "EXIT"
-    term_lock_proxy.release()
-    term_lock_server.release()
+    print "Waiting for closure"
+    server_term_event.wait()
+    proxy_proc.terminate()
+    print "Proxy Endend"
     sys.exit(0)
 
-def run_proxy(server_proc, term_event, term_lock_proxy, term_lock_server):
+def run_proxy(server_proc, term_event, server_term_event):
 
-    coapserver_mon_thr = threading.Thread(target=monitor_coapserver, args=(server_proc, term_event,\
-                                                         term_lock_proxy, term_lock_server,))
+    coapserver_mon_thr = threading.Thread(target=monitor_coapserver, args=(server_proc, term_event, server_term_event,))
     coapserver_mon_thr.start()
 
-    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(term_event, term_lock_proxy, term_lock_server))
+    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(psutil.Process(), term_event, server_term_event,))
     command_line_listener_thr.start()
-
 
     debug(settings.DEBUG)
     run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)

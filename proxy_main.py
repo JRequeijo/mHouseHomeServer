@@ -21,7 +21,7 @@ from proxy.communicator import Communicator
 from server.homeserver import HomeServer
 from utils import AppError, coap2http_code
 
-from server_main import run_home_server
+import server_main
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
@@ -526,15 +526,16 @@ def register_homeserver():
     if not register():
         sys.exit(4)
 
-def monitor_coapserver(server_proc, term_event, server_term_event):
+def monitor_coapserver(server_proc, server_alive_event, proxy_alive_event, term_event, server_term_event):
 
     printed = False
     while True:
-        if server_proc.is_running():
+        if server_alive_event.wait(2):
             print "Server is ALIVE"
+            server_alive_event.clear()
         else:
             print "SERVER is DEAD. Restarting"
-            new_server_proc = Process(target=run_home_server, args=(psutil.Process(), term_event, server_term_event,))
+            new_server_proc = Process(target=server_main.run_home_server, args=(server_alive_event, proxy_alive_event, term_event, server_term_event,))
             new_server_proc.start()
 
             server_proc = psutil.Process(new_server_proc.pid)
@@ -548,13 +549,13 @@ def monitor_coapserver(server_proc, term_event, server_term_event):
             print "Ending Server Process"
             server_proc.terminate()
             break
-        else:
-            time.sleep(2)
+        # else:
+        #     time.sleep(2)
 
     server_term_event.set()
     sys.exit(0)
 
-def command_line_listener(proxy_proc, term_event, server_term_event):
+def command_line_listener(server_alive_event, proxy_alive_event, term_event, server_term_event):
     sock = sock_util.create_server_socket(sock_util.SERVER_ADDRESS)
 
     # Bind the socket to the port
@@ -581,16 +582,28 @@ def command_line_listener(proxy_proc, term_event, server_term_event):
 
     print "Waiting for closure"
     server_term_event.wait()
+    proxy_proc = psutil.Process()
     proxy_proc.terminate()
     print "Proxy Endend"
     sys.exit(0)
 
-def run_proxy(server_proc, term_event, server_term_event):
 
-    coapserver_mon_thr = threading.Thread(target=monitor_coapserver, args=(server_proc, term_event, server_term_event,))
+def send_heartbeat(alive_event):
+    while True:
+        if not alive_event.isSet():
+            print "PROXY Send heartbeat"
+            alive_event.set()
+
+
+def run_proxy(server_proc, server_alive_event, proxy_alive_event, term_event, server_term_event):
+
+    coapserver_mon_thr = threading.Thread(target=monitor_coapserver, args=(server_proc, server_alive_event, proxy_alive_event, term_event, server_term_event,))
     coapserver_mon_thr.start()
 
-    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(psutil.Process(), term_event, server_term_event,))
+    heartbeat_thr = threading.Thread(target=send_heartbeat, args=(proxy_alive_event,))
+    heartbeat_thr.start()
+
+    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(server_alive_event, proxy_alive_event, term_event, server_term_event,))
     command_line_listener_thr.start()
 
     debug(settings.DEBUG)

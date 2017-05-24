@@ -460,7 +460,7 @@ class DeviceState(Resource):
                         if p["property_id"] == key:
                             prop = self.device.server.configs.property_types[key]
                             if prop.validate(new_state[k]):
-                                if self.device.address != str(origin) and\
+                                if self.device.address != str(origin[0]) and\
                                     prop.accessmode not in ["WO", "RW"]:
                                     raise AppError(defines.Codes.FORBIDDEN,\
                                         "Property ("+str(key)+") can not be written (access mode: "\
@@ -477,7 +477,7 @@ class DeviceState(Resource):
                         if p["name"] == str(k):
                             prop = self.device.server.configs.property_types[int(p["property_id"])]
                             if prop.validate(new_state[k]):
-                                if self.device.address != str(origin) and\
+                                if self.device.address != str(origin[0]) and\
                                     prop.accessmode not in ["WO", "RW"]:
                                     raise AppError(defines.Codes.FORBIDDEN,\
                                         "Property ("+str(k)+") can not be written (access mode: "\
@@ -508,7 +508,7 @@ class DeviceState(Resource):
 
     def render_PUT_advanced(self, request, response):
         if request.content_type is defines.Content_types.get("application/json"):
-            origin = request.source[0]
+            origin = request.source
             try:
                 body = json.loads(request.payload)
             except:
@@ -522,11 +522,9 @@ class DeviceState(Resource):
                 else:
                     raise AppError(defines.Codes.BAD_REQUEST,\
                             "Content must be a json dictionary")
-                print self.device.address
-                print str(origin)
 
                 if not settings.WORKING_OFFLINE:
-                    if self.device.address == str(origin):
+                    if self.device.address == str(origin[0]):
                         thread.start_new_thread(notify_cloud, (self,))
 
                 self.payload = self.get_payload()

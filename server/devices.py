@@ -20,6 +20,7 @@ from coapthon.resources.resource import Resource
 
 import settings
 from utils import *
+from proxy.communicator import Communicator
 
 from cloudcomm import regist_device_on_cloud, unregist_device_from_cloud, notify_cloud
 
@@ -36,7 +37,8 @@ class Device(Resource):
         It represents each Device endpoint (URI) for the Home Server.
         It has all the Device informations and accessible sub-endpoints/childrens.
     """
-    def __init__(self, devices_list, device_id, name="", address="", type_id=0, services=[]):
+    def __init__(self, devices_list, device_id, name="", address="", port=0, type_id=0,\
+                    services=[], timeout=settings.ENDPOINT_DEFAULT_TIMEOUT):
 
         # initialize CoAP Resource
         super(Device, self).__init__(name, devices_list.server, visible=True,\
@@ -55,6 +57,7 @@ class Device(Resource):
 
         if validate_IPv4(address):
             self.address = address
+            self.port = port
         else:
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid IP address ("+str(address)+")")
@@ -85,6 +88,8 @@ class Device(Resource):
 
         self.last_access = time.time()
 
+        self.timeout = int(timeout)
+
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"
         self.payload = self.get_payload()
@@ -98,8 +103,9 @@ class Device(Resource):
             represented by this CoAP resource
         """
         return {"local_id": self.id, "name": self.name, "address": self.address,\
-                "device_type": self.device_type.type.id, "services": self.services.services,\
-                "state":self.state.get_simplified_info(), "universal_id":self.universal_id}
+                "port":self.port, "device_type": self.device_type.type.id,\
+                "services": self.services.services, "state":self.state.get_simplified_info(),\
+                "universal_id":self.universal_id, "timeout":self.timeout}
 
     def get_json(self):
         """
@@ -133,6 +139,9 @@ class Device(Resource):
 
     ## CoAP Methods
     def render_GET(self, request):
+        if self.address == str(request.source[0]):
+            self.last_access = time.time()
+
         self.payload = self.get_payload()
         return self
 
@@ -147,6 +156,9 @@ class Device(Resource):
 
             try:
                 self.name = body["name"]
+
+                if self.address == str(request.source[0]):
+                    self.last_access = time.time()
 
                 self.payload = self.get_payload()
                 return status(self, response, defines.Codes.CHANGED)
@@ -230,24 +242,24 @@ class DevicesList(Resource):
                                         d["device_type"], d["services"])
 
         self.devices = res
-    def add_device(self, device):
+    def add_device(self, device, address, port):
         """
             This method adds a new device to the list of device represented by
             the CoAP resource. The device to add is given on the 'device' argument
             and it must be a dictionary representing the device (with the device
             informations)
         """
-        existing_dev = self.check_existing_device(device["address"])
+        existing_dev = self.check_existing_device(address)
         if existing_dev is not None:
-            raise AppError(defines.Codes.BAD_REQUEST, "Device with address ("+device["address"]\
+            raise AppError(defines.Codes.BAD_REQUEST, "Device with address ("+address\
                                                         +") already exists")
         else:
             device_id = self.server.id_gen.new_device_id()
 
         #alterar a criacao do Device pondo todos os campos
         res = Device(self, device_id, name=device["name"],\
-                     address=device["address"], type_id=device["device_type"],\
-                     services=device["services"])
+                     address=address, port=port, type_id=device["device_type"],\
+                     services=device["services"], timeout=device["timeout"])
         self.devices[device_id] = res
 
         return res
@@ -301,8 +313,9 @@ class DevicesList(Resource):
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid IP address ("+str(device_address)+")")
 
-        for d in self.devices.values():
+        for d in self.devices.itervalues():
             if d.address == device_address:
+                d.last_access = time.time()
                 return d.id
         return None
 
@@ -315,16 +328,21 @@ class DevicesList(Resource):
             If one device was not accessed at least one time in that interval
             it is marked for deletion and then it is deleted.
         """
-        timeout = settings.DEVICES_MONITORING_TIMEOUT
         while True:
             try:
                 now = time.time()
                 del_marked = []
                 for d in self.devices.itervalues():
-                    if (now-timeout) > d.last_access:
-                        logger.debug("Device ("+str(d.id)+") is down")
-                        del_marked.append(d)
-                        logger.debug("Device ("+str(d.id)+") marked for deletion")
+                    if (now-d.timeout) > d.last_access:
+                        comm = Communicator(d.address)
+                        try:
+                            comm.get("/", timeout=settings.DEVICES_MONITORING_TIMEOUT)
+                            d.last_access = time.time()
+                        except:
+                            comm.stop()
+                            logger.debug("Device ("+str(d.id)+") is down")
+                            del_marked.append(d)
+                            logger.debug("Device ("+str(d.id)+") marked for deletion")
 
                 for d in del_marked:
                     d.delete()
@@ -334,6 +352,10 @@ class DevicesList(Resource):
 
     ## CoAP Methods
     def render_GET(self, request):
+        for d in self.devices.itervalues():
+            if d.address == str(request.source[0]):
+                d.last_access = time.time()
+
         self.payload = self.get_payload()
         return self
 
@@ -346,9 +368,11 @@ class DevicesList(Resource):
                 return error(self, response, defines.Codes.BAD_REQUEST,\
                                     "Body content not properly json formated")
             try:
-                check_on_body(body, ["name", "address", "device_type", "services"])
+                check_on_body(body, ["name", "device_type", "services", "timeout"])
 
-                dev = self.add_device(body)
+                address = str(request.source[0])
+                port = int(request.source[1])
+                dev = self.add_device(body, address, port)
 
                 if not settings.WORKING_OFFLINE:
                     thread.start_new_thread(regist_device_on_cloud, (dev,))
@@ -584,6 +608,9 @@ class DeviceState(Resource):
 
     # CoAP Methods
     def render_GET(self, request):
+        if self.device.address == str(request.source[0]):
+            self.device.last_access = time.time()
+
         self.payload = self.get_payload()
         return self
 
@@ -600,6 +627,7 @@ class DeviceState(Resource):
             try:
                 if isinstance(body, dict):
                     if self.device.address == str(origin[0]):
+                        self.device.last_access = time.time()
                         self.change_state(body)
                         self.wanted_state = copy.deepcopy(self.state)
                     else:
@@ -682,6 +710,9 @@ class DeviceTypeResource(Resource):
 
     ## CoAP Methods
     def render_GET(self, request):
+        if self.device.address == str(request.source[0]):
+            self.device.last_access = time.time()
+
         self.payload = self.get_payload()
         return self
 ## Device Services Resource
@@ -758,6 +789,9 @@ class DeviceServicesResource(Resource):
 
     ## CoAP Methods
     def render_GET(self, request):
+        if self.device.address == str(request.source[0]):
+            self.device.last_access = time.time()
+
         self.payload = self.get_payload()
         return self
 
@@ -778,6 +812,9 @@ class DeviceServicesResource(Resource):
                 else:
                     return error(self, response, defines.Codes.BAD_REQUEST,\
                                     "Services provided are not valid")
+
+                if self.device.address == str(request.source[0]):
+                    self.device.last_access = time.time()
 
                 self.payload = self.get_payload()
                 return status(self, response, defines.Codes.CHANGED)
@@ -805,6 +842,9 @@ class DeviceServicesResource(Resource):
                 else:
                     return error(self, response, defines.Codes.BAD_REQUEST,\
                                     "Services provided are not valid")
+                
+                if self.device.address == str(request.source[0]):
+                    self.device.last_access = time.time()
 
                 self.payload = self.get_payload()
                 return status(self, response, defines.Codes.CHANGED)
@@ -826,6 +866,9 @@ class DeviceServicesResource(Resource):
             except:
                 return error(self, response, defines.Codes.NOT_FOUND,\
                             "Service with id ("+str(id)+") is not attributed for this device")
+            
+            if self.device.address == str(request.source[0]):
+                self.device.last_access = time.time()
 
             self.payload = self.get_payload()
             return status(self, response, defines.Codes.DELETED)

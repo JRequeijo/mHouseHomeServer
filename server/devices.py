@@ -10,6 +10,7 @@ import json
 import thread
 import os.path
 import logging
+import copy
 
 import requests
 import time
@@ -120,6 +121,7 @@ class Device(Resource):
             CoAP representation and all its sub-endpoints/childrens CoAP representations,
             'deleting' the full device from this server
         """
+        logger.debug("Deleting device "+str(self.id))
         self.device_type.delete()
         self.state.delete()
         self.services.delete()
@@ -193,7 +195,6 @@ class DevicesList(Resource):
         self.resource_type = "DevicesList"
         self.interface_type = "if1"
 
-    
 
     def get_info(self):
         """
@@ -386,6 +387,7 @@ class DeviceState(Resource):
 
         # state of the device - to modify periodically
         self.state = self.device.server.configs.device_types[int(device.device_type_id)].default_state()
+        self.wanted_state = copy.deepcopy(self.state)
 
         ### CoAP Resource Data ###
         self.res_content_type = "application/json"
@@ -394,14 +396,15 @@ class DeviceState(Resource):
         self.resource_type = "DeviceState"
         self.interface_type = "if1"
 
-    
 
     def get_info(self):
         """
             This method returns a dictionary with the detailed state information
             correspondent to a given device
         """
-        return {"device_id": self.device.id, "state": self.state}
+        return {"device_id": self.device.id,\
+                "current_state": self.get_simplified_current_state(),\
+                "wanted_state":self.get_simplified_wanted_state()}
 
     def get_json(self):
         """
@@ -424,12 +427,35 @@ class DeviceState(Resource):
             the dictionary is formated like {"property1_name":"property1_value",
             ..., "propertyN_name":"propertyN_value"}
         """
+        return {"current_state":self.get_simplified_current_state(),\
+                "wanted_state":self.get_simplified_wanted_state()}
+
+    def get_simplified_current_state(self):
+        """
+            This method returns a dictionary with the simplified state information
+            correspondent to a given device. This information is simplified because
+            the dictionary is formated like {"property1_name":"property1_value",
+            ..., "propertyN_name":"propertyN_value"}
+        """
         ret = {}
         for p in self.state:
             ret[p["name"]] = p["value"]
 
         return ret
-    def change_state(self, new_state, origin):
+
+    def get_simplified_wanted_state(self):
+        """
+            This method returns a dictionary with the simplified state information
+            correspondent to a given device. This information is simplified because
+            the dictionary is formated like {"property1_name":"property1_value",
+            ..., "propertyN_name":"propertyN_value"}
+        """
+        ret = {}
+        for p in self.wanted_state:
+            ret[p["name"]] = p["value"]
+
+        return ret
+    def change_state(self, new_state):
         """
             This method updates the state of a given device.
             It recieves the first argument (new_state), which should be a
@@ -460,11 +486,6 @@ class DeviceState(Resource):
                         if p["property_id"] == key:
                             prop = self.device.server.configs.property_types[key]
                             if prop.validate(new_state[k]):
-                                if self.device.address != str(origin[0]) and\
-                                    prop.accessmode not in ["WO", "RW"]:
-                                    raise AppError(defines.Codes.FORBIDDEN,\
-                                        "Property ("+str(key)+") can not be written (access mode: "\
-                                                                        +str(prop.accessmode)+")")
                                 if prop.valuetype_class == "SCALAR":
                                     p["value"] = float(new_state[k])
                                 else:
@@ -477,8 +498,67 @@ class DeviceState(Resource):
                         if p["name"] == str(k):
                             prop = self.device.server.configs.property_types[int(p["property_id"])]
                             if prop.validate(new_state[k]):
-                                if self.device.address != str(origin[0]) and\
-                                    prop.accessmode not in ["WO", "RW"]:
+                                if prop.valuetype_class == "SCALAR":
+                                    p["value"] = float(new_state[k])
+                                else:
+                                    p["value"] = str(new_state[k])
+                            else:
+                                raise AppError(defines.Codes.BAD_REQUEST,\
+                                                "Invalid property new value ("\
+                                                            +str(new_state[k])+")")
+            else:
+                raise AppError(defines.Codes.INTERNAL_SERVER_ERROR,\
+                            "Property id or name invalid format. Must be int or string.")
+        return True
+
+    def change_wanted_state(self, new_state):
+        """
+            This method updates the state of a given device.
+            It recieves the first argument (new_state), which should be a
+            dictionary with a simplified representation of the new state, i.e.
+            {"property1_name":"property1_value",..., "propertyN_name":"propertyN_value"},
+            and where at least one of the Device's properties must be present.
+            The second argument (origin) must be the IP address from where the update
+            is being requested, in order to secure that only the device itself can update
+            RO properties.
+        """
+        properties = self.device.device_type.type.properties
+
+        keys = []
+        for p in properties:
+            keys.append(str(p.id))
+            keys.append(str(p.name))
+
+        for p in new_state.keys():
+            if not str(p) in keys:
+                raise AppError(defines.Codes.BAD_REQUEST,\
+                                "Device does not have property ("+str(p)+")")
+
+        for k in new_state.keys():
+            if isinstance(k, basestring):
+                try:
+                    key = int(k)
+                    for p in self.wanted_state:
+                        if p["property_id"] == key:
+                            prop = self.device.server.configs.property_types[key]
+                            if prop.validate(new_state[k]):
+                                if prop.accessmode not in ["WO", "RW"]:
+                                    raise AppError(defines.Codes.FORBIDDEN,\
+                                        "Property ("+str(key)+") can not be written (access mode: "\
+                                                                        +str(prop.accessmode)+")")
+                                if prop.valuetype_class == "SCALAR":
+                                    p["value"] = float(new_state[k])
+                                else:
+                                    p["value"] = str(new_state[k])
+                            else:
+                                raise AppError(defines.Codes.BAD_REQUEST,\
+                                            "Invalid property new value ("+str(new_state[k])+")")
+                except:
+                    for p in self.wanted_state:
+                        if p["name"] == str(k):
+                            prop = self.device.server.configs.property_types[int(p["property_id"])]
+                            if prop.validate(new_state[k]):
+                                if prop.accessmode not in ["WO", "RW"]:
                                     raise AppError(defines.Codes.FORBIDDEN,\
                                         "Property ("+str(k)+") can not be written (access mode: "\
                                                                         +str(prop.accessmode)+")")
@@ -494,6 +574,7 @@ class DeviceState(Resource):
                 raise AppError(defines.Codes.INTERNAL_SERVER_ERROR,\
                             "Property id or name invalid format. Must be int or string.")
         return True
+
     def delete(self):
         """
             This method deletes the device state CoAP representation from the server.
@@ -518,7 +599,11 @@ class DeviceState(Resource):
 
             try:
                 if isinstance(body, dict):
-                    self.change_state(body, origin)
+                    if self.device.address == str(origin[0]):
+                        self.change_state(body)
+                        self.wanted_state = copy.deepcopy(self.state)
+                    else:
+                        self.change_wanted_state(body)
                 else:
                     raise AppError(defines.Codes.BAD_REQUEST,\
                             "Content must be a json dictionary")

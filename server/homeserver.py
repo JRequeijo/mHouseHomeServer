@@ -179,3 +179,41 @@ class HomeServer(CoAP):
         logger.info("Shutting down server")
         self.close()
         logger.info("Server is down")
+
+    
+    def _retransmit(self, transaction, message, future_time, retransmit_count):
+        """
+        Thread function to retransmit the message in the future
+        :param transaction: the transaction that owns the message that needs retransmission
+        :param message: the message that needs the retransmission task
+        :param future_time: the amount of time to wait before a new attempt
+        :param retransmit_count: the number of retransmissions
+        """
+        with transaction:
+            while retransmit_count < defines.MAX_RETRANSMIT and (not message.acknowledged and not message.rejected) \
+                    and not self.stopped.isSet():
+                transaction.retransmit_stop.wait(timeout=future_time)
+                if not message.acknowledged and not message.rejected and not self.stopped.isSet():
+                    retransmit_count += 1
+                    future_time *= 2
+                    self.send_datagram(message)
+
+            if message.acknowledged or message.rejected:
+                message.timeouted = False
+            else:
+                logger.warning("Give up on message {message}".format(message=message.line_print))
+                message.timeouted = True
+                if message.observe is not None:
+                    self._observeLayer.remove_subscriber(message)
+
+                    for d in self.devices.devices.itervalues():
+                        if transaction.request.source[0] == d.address:
+                            d.delete()
+                            break
+
+            try:
+                self.to_be_stopped.remove(transaction.retransmit_stop)
+            except ValueError:
+                pass
+            transaction.retransmit_stop = None
+            transaction.retransmit_thread = None

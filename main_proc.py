@@ -5,8 +5,9 @@ import getopt
 import sys
 import socket
 import threading
+import multiprocessing
 import psutil
-from multiprocessing import Process
+from multiprocessing import Process, Queue, Semaphore
 
 import proxy_main
 import server_main
@@ -25,21 +26,20 @@ def usage():
 #
 def home_server_main_process():
 
-    term_event = threading.Event()
-    server_term_event = threading.Event()
-
-    server_alive_event = threading.Event()
-    proxy_alive_event = threading.Event()
+    server2proxy_queue = Queue()
+    proxy2server_queue = Queue()
+    semphore = Semaphore(0)
+    term_event = multiprocessing.Event()
 
     proxy_main.register_homeserver()
 
-    server_proc = Process(target=server_main.run_home_server, args=(server_alive_event, proxy_alive_event, term_event, server_term_event,))
+    server_proc = Process(target=server_main.run_homeserver, args=(server2proxy_queue, proxy2server_queue, term_event, semphore,))
     server_proc.start()
 
     print "PROXY PROCESS: "+str(os.getpid())
     print "SERVER PROCCESS: "+str(server_proc.pid)
 
-    proxy_main.run_proxy(server_proc, server_alive_event, proxy_alive_event, term_event, server_term_event)
+    proxy_main.run_proxy(server2proxy_queue, proxy2server_queue, term_event, semphore)
 
 #
 #

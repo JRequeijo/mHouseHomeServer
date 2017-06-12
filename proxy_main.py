@@ -4,11 +4,14 @@ import logging
 import thread
 import threading
 import time
-import os
-# import getopt
-import psutil
 
-from multiprocessing import Process
+
+import os
+
+import multiprocessing
+import Queue
+import signal
+
 from functools import wraps
 from bottle import Bottle, run, request, response, abort, debug
 
@@ -526,36 +529,25 @@ def register_homeserver():
     if not register():
         sys.exit(4)
 
-def monitor_coapserver(server_proc, server_alive_event, proxy_alive_event, term_event, server_term_event):
-
-    printed = False
+def monitor_homeserver(server2proxy_queue, term_event, semphore):
     while True:
-        if server_alive_event.wait(2):
-            print "Server is ALIVE"
-            server_alive_event.clear()
-        else:
-            print "SERVER is DEAD. Restarting"
-            new_server_proc = Process(target=server_main.run_home_server, args=(server_alive_event, proxy_alive_event, term_event, server_term_event,))
-            new_server_proc.start()
+        try:
+            server_state = server2proxy_queue.get(True, 5)
+            if server_state is True:
+                print "HOMESERVER is ALIVE"
+            else:
+                raise Queue.Empty
+        except Queue.Empty:
+            print "HOMESERVER is DEAD"
 
-            server_proc = psutil.Process(new_server_proc.pid)
-
-            print "SERVER PROCCESS: "+str(new_server_proc.pid)
-            print "SERVER ALIVE AGAIN"
-            printed = False
-
-        if term_event.isSet():
-            print "ending server monitor"
-            print "Ending Server Process"
-            server_proc.terminate()
+        if term_event.is_set():
+            print "TERMINATING HOMESERVER MONITORING THREAD"
+            semphore.release()
             break
-        # else:
-        #     time.sleep(2)
 
-    server_term_event.set()
     sys.exit(0)
 
-def command_line_listener(server_alive_event, proxy_alive_event, term_event, server_term_event):
+def command_line_listener(term_event, semphore):
     sock = sock_util.create_server_socket(sock_util.SERVER_ADDRESS)
 
     # Bind the socket to the port
@@ -573,37 +565,44 @@ def command_line_listener(server_alive_event, proxy_alive_event, term_event, ser
             # print >>sys.stderr, 'connection from', client_address
             code = sock_util.receive_code_message(connection)
             if code == sock_util.DOWN:
-                print "EXITING"
                 term_event.set()
+                print "Waiting for closure"
+                semphore.acquire()
+                semphore.acquire()
                 terminate = True
         finally:
             # Clean up the connection
             connection.close()
 
-    print "Waiting for closure"
-    server_term_event.wait()
-    proxy_proc = psutil.Process()
-    proxy_proc.terminate()
-    print "Proxy Endend"
+    term_event.clear()
+    print "COMM LINE LISTENER EXITING"
+    my_proc = multiprocessing.current_process()
+    os.kill(my_proc.pid, signal.SIGINT)
+    
     sys.exit(0)
 
 
-def send_heartbeat(alive_event):
+def send_heartbeat(proxy2server_queue, term_event):
     while True:
-        if not alive_event.isSet():
-            print "PROXY Send heartbeat"
-            alive_event.set()
+        proxy2server_queue.put(True, True, None)
+        print "PROXY Send heartbeat"
+        time.sleep(2)
 
+        if term_event.is_set():
+            print "TERMINATING SEND HB from PROXY THREAD"
+            break
 
-def run_proxy(server_proc, server_alive_event, proxy_alive_event, term_event, server_term_event):
+    sys.exit(0)
 
-    coapserver_mon_thr = threading.Thread(target=monitor_coapserver, args=(server_proc, server_alive_event, proxy_alive_event, term_event, server_term_event,))
+def run_proxy(server2proxy_queue, proxy2server_queue, term_event, semphore):
+
+    coapserver_mon_thr = threading.Thread(target=monitor_homeserver, args=(server2proxy_queue, term_event, semphore,))
     coapserver_mon_thr.start()
 
-    heartbeat_thr = threading.Thread(target=send_heartbeat, args=(proxy_alive_event,))
+    heartbeat_thr = threading.Thread(target=send_heartbeat, args=(proxy2server_queue, term_event,))
     heartbeat_thr.start()
 
-    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(server_alive_event, proxy_alive_event, term_event, server_term_event,))
+    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(term_event, semphore,))
     command_line_listener_thr.start()
 
     debug(settings.DEBUG)

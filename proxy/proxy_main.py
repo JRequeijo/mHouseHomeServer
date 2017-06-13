@@ -1,30 +1,27 @@
+
 import json
 import sys
 import logging
-import thread
 import threading
-import time
-
-
 import os
-
-import multiprocessing
-import Queue
 import signal
+import time
 
 from functools import wraps
 from bottle import Bottle, run, request, response, abort, debug
 
+
+my_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(my_dir+"/../")
+sys.path.append(my_dir+"/../server/")
+
 from coapthon import defines
 
 import settings
-import ps_socket_utils as sock_util
 from proxy.register import register
 from proxy.communicator import Communicator
 from server.homeserver import HomeServer
 from utils import AppError, coap2http_code
-
-import server_main
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 
@@ -529,85 +526,29 @@ def register_homeserver():
     if not register():
         sys.exit(4)
 
-def monitor_homeserver(server2proxy_queue, term_event, semphore):
-    while True:
-        try:
-            server_state = server2proxy_queue.get(True, 5)
-            if server_state is True:
-                print "HOMESERVER is ALIVE"
-            else:
-                raise Queue.Empty
-        except Queue.Empty:
-            print "HOMESERVER is DEAD"
 
-        if term_event.is_set():
-            print "TERMINATING HOMESERVER MONITORING THREAD"
-            semphore.release()
-            break
+def check_kill_process(pstring):
+    for line in os.popen("ps ax | grep " + pstring + " | grep -v grep"):
+        fields = line.split()
+        pid = fields[0]
+        if pid != str(os.getpid()):
+            os.kill(int(pid), signal.SIGKILL)
 
-    sys.exit(0)
+def run_proxy():
 
-def command_line_listener(term_event, semphore):
-    sock = sock_util.create_server_socket(sock_util.SERVER_ADDRESS)
+    # check_kill_process("proxy_main.py")
 
-    # Bind the socket to the port
-    # print >>sys.stderr, 'starting up on %s' % server_address
-    sock.bind(sock_util.SERVER_ADDRESS)
+    logger.info("Starting Proxy...") 
 
-    # Listen for incoming connections
-    sock.listen(1)
-    terminate = False
-    while not terminate:
-        # Wait for a connection
-        # print >>sys.stderr, 'waiting for a connection'
-        connection, client_address = sock.accept()
-        try:
-            # print >>sys.stderr, 'connection from', client_address
-            code = sock_util.receive_code_message(connection)
-            if code == sock_util.DOWN:
-                term_event.set()
-                print "Waiting for closure"
-                semphore.acquire()
-                semphore.acquire()
-                terminate = True
-        finally:
-            # Clean up the connection
-            connection.close()
+    register_homeserver()
+    try:
+        debug(settings.DEBUG)
+        run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
+    finally:
+        logger.info("Shutting down proxy")
+        logger.info("Proxy is down")
+        sys.exit()
 
-    term_event.clear()
-    print "COMM LINE LISTENER EXITING"
-    my_proc = multiprocessing.current_process()
-    os.kill(my_proc.pid, signal.SIGINT)
-    
-    sys.exit(0)
-
-
-def send_heartbeat(proxy2server_queue, term_event):
-    while True:
-        proxy2server_queue.put(True, True, None)
-        print "PROXY Send heartbeat"
-        time.sleep(2)
-
-        if term_event.is_set():
-            print "TERMINATING SEND HB from PROXY THREAD"
-            break
-
-    sys.exit(0)
-
-def run_proxy(server2proxy_queue, proxy2server_queue, term_event, semphore):
-
-    coapserver_mon_thr = threading.Thread(target=monitor_homeserver, args=(server2proxy_queue, term_event, semphore,))
-    coapserver_mon_thr.start()
-
-    heartbeat_thr = threading.Thread(target=send_heartbeat, args=(proxy2server_queue, term_event,))
-    heartbeat_thr.start()
-
-    command_line_listener_thr = threading.Thread(target=command_line_listener, args=(term_event, semphore,))
-    command_line_listener_thr.start()
-
-    debug(settings.DEBUG)
-    run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
-
-# if __name__ == "__main__":
-#     run_proxy()
+if __name__ == "__main__":
+    run_proxy()
 

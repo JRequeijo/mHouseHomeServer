@@ -1,0 +1,3 @@
+#!/bin/sh
+echo Starting Home Server
+exec python ./main_proc.py

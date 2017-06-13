@@ -2,6 +2,7 @@
     This is the Home Server Main CoAP File.
     Here is specified the CoAP server that represents the Home Server Core.
 """
+import sys
 import logging
 import threading
 
@@ -37,7 +38,7 @@ class HomeServer(CoAP):
         self.port = settings.COAP_PORT
         self.multicast = settings.COAP_MULTICAST
 
-        logger.info("Starting Home Server...")
+        logger.info("Starting CoAP Server...")
         CoAP.__init__(self, (self.coapaddress, self.port), self.multicast)
 
         self.info = HomeServerInfo(self)
@@ -179,8 +180,9 @@ class HomeServer(CoAP):
         logger.info("Shutting down server")
         self.close()
         logger.info("Server is down")
+        sys.exit(0)
 
-    
+
     def _retransmit(self, transaction, message, future_time, retransmit_count):
         """
         Thread function to retransmit the message in the future

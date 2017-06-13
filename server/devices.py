@@ -11,6 +11,7 @@ import thread
 import os.path
 import logging
 import copy
+import sys
 
 import requests
 import time
@@ -328,7 +329,7 @@ class DevicesList(Resource):
             If one device was not accessed at least one time in that interval
             it is marked for deletion and then it is deleted.
         """
-        while True:
+        while not self.server.stopped.isSet():
             try:
                 now = time.time()
                 del_marked = []
@@ -349,6 +350,8 @@ class DevicesList(Resource):
                     logger.debug("Device ("+str(d.id)+") Deleted")
             except Exception as e:
                 print e.message
+
+        sys.exit(0)
 
     ## CoAP Methods
     def render_GET(self, request):

@@ -526,21 +526,12 @@ def register_homeserver():
     if not register():
         sys.exit(4)
 
-
-def check_kill_process(pstring):
-    for line in os.popen("ps ax | grep " + pstring + " | grep -v grep"):
-        fields = line.split()
-        pid = fields[0]
-        if pid != str(os.getpid()):
-            os.kill(int(pid), signal.SIGKILL)
-
-def run_proxy():
-
-    # check_kill_process("proxy_main.py")
+def run_proxy(register=True):
 
     logger.info("Starting Proxy...") 
 
-    register_homeserver()
+    if register:
+        register_homeserver()
     try:
         debug(settings.DEBUG)
         run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)

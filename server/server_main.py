@@ -14,19 +14,7 @@ from homeserver import HomeServer
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 
-
-def check_kill_process(pstring):
-    for line in os.popen("ps ax | grep " + pstring + " | grep -v grep"):
-        fields = line.split()
-        pid = fields[0]
-        print pid
-        if pid != str(os.getpid()):
-            os.kill(int(pid), signal.SIGKILL)
-
 def run_homeserver():
-
-
-    # check_kill_process("server_main.py")
 
     logger.info("Starting Home Server...")
     try:

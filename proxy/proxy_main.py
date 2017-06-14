@@ -521,17 +521,10 @@ def errorHandler(error):
     return send_response(json.dumps({"error_code": error.status_code, "error_msg": error.body}))
 
 #
-####### Initialize Home Server ########
-def register_homeserver():
-    if not register():
-        sys.exit(4)
-
-def run_proxy(register=True):
+####### Initialize Proxy ########
+def run_proxy():
 
     logger.info("Starting Proxy...") 
-
-    if register:
-        register_homeserver()
     try:
         debug(settings.DEBUG)
         run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)

@@ -42,7 +42,7 @@ Specification of the IP address and port for the proxy and the CoAP server
 PROXY_ADDR = utils.get_my_ip()
 PROXY_PORT = 8080
 
-COAP_ADDR = "192.168.1.67"    # "224.0.1.187"
+COAP_ADDR = utils.get_my_ip()
 COAP_PORT = 5683
 COAP_MULTICAST = False
 

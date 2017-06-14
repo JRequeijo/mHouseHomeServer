@@ -18,9 +18,7 @@ sys.path.append(my_dir+"/../server/")
 from coapthon import defines
 
 import settings
-from proxy.register import register
-from proxy.communicator import Communicator
-from server.homeserver import HomeServer
+from communicator import Communicator
 from utils import AppError, coap2http_code
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
@@ -51,16 +49,16 @@ comm = Communicator(settings.COAP_ADDR, settings.COAP_PORT)
 
 def save_server_confs(new_name):
     try:
-        f = open("serverconf.json", "r")
+        f = open(settings.SERVER_CONFIG_FILE, "r")
         data = json.load(f)
         f.close()
 
         data["name"] = new_name
-        f = open("serverconf.json", "w")
+        f = open(settings.SERVER_CONFIG_FILE, "w")
         json.dump(data, f)
         f.close()
-    except Exception as err:
-        logger.error(err.message)
+    except Exception:
+        logger.error(Exception)
 #
 # ################  PROXY ENDPOINTS  ##################
 # ###### Server Root Endpoints########
@@ -100,7 +98,8 @@ def update_info():
                 if err_check is not None:
                     abort(err_check[0], err_check[1])
 
-                thread.start_new_thread(save_server_confs, (data["name"],))
+                update_file_thr = threading.Thread(target=save_server_confs, args=(data["name"],))
+                update_file_thr.start()
 
                 return send_response(resp.payload, resp.code)
             except KeyError as err:

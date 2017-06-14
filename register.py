@@ -184,10 +184,14 @@ def register_from_scratch():
             while not ip_ok:
                 # ip_addr = raw_input("Enter your server IP address: ")
                 # ip_addr = ip_addr.strip()
-                ip_addr = utils.get_my_ip()
+                ip_addr = settings.COAP_ADDR
+                port = settings.COAP_PORT
+                multicast = settings.COAP_MULTICAST
 
                 if utils.validate_IPv4(ip_addr):
                     data["address"] = ip_addr
+                    data["port"] = port
+                    data["multicast"] = multicast
                     ip_ok = True
                 else:
                     print "Invalid IP address"
@@ -224,15 +228,28 @@ def register_from_scratch():
                 print "ERROR: You do not have connection to the internet or the cloud server is down"
                 return False
 
-            if resp.status_code == 201:
+            if resp.status_code == 200:
                 print "Server Registed Successfully"
                 try:
                     f = open(settings.SERVER_CONFIG_FILE, "w")
                     js = json.loads(resp.text)
-                    js["email"] = email
-                    js["password"] = password
-                    json.dump(js, f)
+
+                    for serv in js["servers"]:
+                        if serv["address"] == ip_addr:
+                            confs = serv
+                            break
+
+                    confs["email"] = email
+                    confs["password"] = password
+                    json.dump(confs, f)
                     f.close()
+
+                    settings.HOME_SERVER_ID = confs["id"]
+                    settings.HOME_SERVER_NAME = confs["name"]
+                    settings.HOME_SERVER_ADDRESS = confs["address"]
+                    settings.USER_PASSWORD = confs["password"]
+                    settings.USER_EMAIL = confs["email"]
+
                     reg_ok = True
                 except:
                     print "ERROR: Could not create "+settings.SERVER_CONFIG_FILE+" file."
@@ -242,6 +259,7 @@ def register_from_scratch():
                 if "address" in js.keys():
                     print "ERROR ("+ str(resp.status_code)+"): "+str(js["address"][0])
                     ip_ok = False
+                    sys.exit(1)
 
                 if "name" in js.keys():
                     print "ERROR ("+ str(resp.status_code)+"): "+str(js["name"][0])

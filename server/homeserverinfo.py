@@ -43,7 +43,8 @@ class HomeServerInfo(Resource):
             represented by this CoAP resource.
         """
         return {"server_id": self.server.id, "name": self.server.name,\
-                 "address": self.server.address}
+                 "address": self.server.address, "port": self.server.port,\
+                 "multicast": self.server.multicast}
 
     def get_json(self):
         """

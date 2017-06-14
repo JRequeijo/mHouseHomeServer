@@ -11,17 +11,12 @@ sys.path.append(my_dir+"/../proxy/")
 import settings
 
 from homeserver import HomeServer
-from register import register
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 
 def run_homeserver():
     logger.info("Starting Home Server...")
-
-    if not register():
-        sys.exit(4)
-
     try:
         f = open(settings.SERVER_CONFIG_FILE, "r")
         server_conf = json.load(f)

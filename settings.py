@@ -65,4 +65,4 @@ the HomeServer works without internet connection but the devices are only
 reachable from the HomeServer"s REST API
 """
 CLOUD_BASE_URL = "http://127.0.0.1:8000/"
-ALLOW_WORKING_OFFLINE = True
+ALLOW_WORKING_OFFLINE = False

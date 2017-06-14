@@ -1,7 +1,12 @@
 import threading
+import sys
 
 import proxy.proxy_main as proxy
 import server.server_main as server
+from register import register
+
+if not register():
+    sys.exit(4)
 
 thr1 = threading.Thread(target=server.run_homeserver)
 thr1.start()

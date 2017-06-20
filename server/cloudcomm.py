@@ -143,7 +143,7 @@ def notify_cloud(device_state):
         try:
             resp = client.patch(settings.CLOUD_BASE_URL+"api/devices/"\
                                 +str(device_state.device.universal_id)\
-                                +"/state/?fromserver=true", data=device_state.get_json())
+                                +"/state/?fromserver=true", data=json.dumps({"current_state":device_state.state}))
             if resp.status_code == 200:
                 print "STATE CHANGED"
         except:

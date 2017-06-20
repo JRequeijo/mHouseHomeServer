@@ -45,12 +45,12 @@ class Communicator(object):
             on the CoAP server. It waits timeout seconds to receive the response 
             to the get call.
         """
-        # try:
-        self.start()
-        resp = self.client.get(path, timeout=timeout)
-        # except:
-        #     self.stop()
-        #     raise AppError(504, "Connection Timeout. Home Server is down.")
+        try:
+            self.start()
+            resp = self.client.get(path, timeout=timeout)
+        except:
+            self.stop()
+            raise AppError(504, "Connection Timeout. Home Server is down.")
 
         self.stop()
 

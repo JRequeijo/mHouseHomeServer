@@ -48,9 +48,11 @@ def regist_device_on_cloud(device):
                 for d in devices:
                     if d["address"] == device.address:
                         device.universal_id = d["id"]
+                        device.services.services = d["services"]
+                        device.name = d["name"]
                         try:
                             resp = client.patch(settings.CLOUD_BASE_URL+"api/devices/"\
-                                                    +str(d["id"])+"/", data=device.get_json())
+                                                    +str(d["id"])+"/?fromserver=true", data=device.get_json())
                             regist_done = True
                             break
                         except:

@@ -462,7 +462,7 @@ def add_service_to_device(device_id):
 
 
 @proxy.delete("/devices/<device_id:int>/services")
-def delete_service_from(device_id):
+def delete_service_from_device(device_id):
 
     try:
         s_id = request.query.get("id")

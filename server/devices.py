@@ -105,7 +105,7 @@ class Device(Resource):
         """
         return {"local_id": self.id, "name": self.name, "address": self.address,\
                 "port":self.port, "device_type": self.device_type.type.id,\
-                "services": self.services.services, "state":self.state.get_simplified_info(),\
+                "services": self.services.get_services(), "state":self.state.get_simplified_info(),\
                 "universal_id":self.universal_id, "timeout":self.timeout}
 
     def get_json(self):
@@ -782,7 +782,7 @@ class DeviceServicesResource(Resource):
                 self.services.remove(s)
 
         return self.services
-    
+
     def delete(self):
         """
             This method deletes the services CoAP representation from the server.

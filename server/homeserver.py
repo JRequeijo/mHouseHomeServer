@@ -5,6 +5,7 @@
 import sys
 import logging
 import threading
+import copy
 
 from coapthon.server.coap import CoAP
 from coapthon import defines
@@ -52,7 +53,6 @@ class HomeServer(CoAP):
         logger.info(self.root.dump())
 
     #
-    #
     ### This method is an override to the original CoAPthon receive_request method
     ### in order to allow the notification of the devices seperately
     def receive_request(self, transaction):
@@ -83,10 +83,8 @@ class HomeServer(CoAP):
                 if isinstance(transaction.resource, DeviceState):
                     if transaction.request.source[0] != transaction.resource.device.address:
                         self.notify_owner(transaction.resource)
-                        transaction.resource.changed = False
                     else:
                         self.notify_others(transaction.resource)
-                        transaction.resource.changed = False
                 else:
                     self.notify(transaction.resource)
 
@@ -95,94 +93,22 @@ class HomeServer(CoAP):
             elif transaction.resource is not None and transaction.resource.deleted:
                 self.notify(transaction.resource)
                 transaction.resource.deleted = False
+
+            if (transaction.resource is None) or (not transaction.resource.deleted):
             ########################################################################
+                self._observeLayer.send_response(transaction)
 
-            self._observeLayer.send_response(transaction)
+                self._blockLayer.send_response(transaction)
 
-            self._blockLayer.send_response(transaction)
+                self._stop_separate_timer(transaction.separate_timer)
 
-            self._stop_separate_timer(transaction.separate_timer)
+                self._messageLayer.send_response(transaction)
 
-            self._messageLayer.send_response(transaction)
-
-            if transaction.response is not None:
-                if transaction.response.type == defines.Types["CON"]:
-                    self._start_retransmission(transaction, transaction.response)
-                self.send_datagram(transaction.response)
-
-    def notify_owner(self, resource):
-        """
-        Notifies the observers of a certain resource.
-
-        :param resource: the resource
-        """
-        observers = self._observeLayer.notify(resource)
-        logger.debug("Notifying Owner")
-        for transaction in observers:
-            if transaction.request.source[0] == resource.device.address:
-                logger.debug("Notifying: "+transaction.request.source[0])
-                with transaction:
-                    transaction.response = None
-                    transaction = self._requestLayer.receive_request(transaction)
-                    transaction = self._observeLayer.send_response(transaction)
-                    transaction = self._blockLayer.send_response(transaction)
-                    transaction = self._messageLayer.send_response(transaction)
-                    if transaction.response is not None:
-                        if transaction.response.type == defines.Types["CON"]:
-                            self._start_retransmission(transaction, transaction.response)
-
-                        self.send_datagram(transaction.response)
-                        break
-
-    def notify_others(self, resource):
-        """
-        Notifies the observers of a certain resource.
-
-        :param resource: the resource
-        """
-        observers = self._observeLayer.notify(resource)
-        logger.debug("Notifying Others")
-        for transaction in observers:
-            if transaction.request.source[0] != resource.device.address:
-                logger.debug("Notifying: "+transaction.request.source[0])
-                with transaction:
-                    transaction.response = None
-                    transaction = self._requestLayer.receive_request(transaction)
-                    transaction = self._observeLayer.send_response(transaction)
-                    transaction = self._blockLayer.send_response(transaction)
-                    transaction = self._messageLayer.send_response(transaction)
-                    if transaction.response is not None:
-                        if transaction.response.type == defines.Types["CON"]:
-                            self._start_retransmission(transaction, transaction.response)
-
-                        self.send_datagram(transaction.response)
-
-    def start(self):
-        """
-            This method starts the Home Server CoAP server
-            (or what can be viewed as the Home Server Core)
-        """
-        try:
-            logger.info("Home Server Started...")
-
-            mon_t = threading.Thread(target=self.devices.monitoring_devices)
-            mon_t.start()
-
-            self.listen(10)
-        except KeyboardInterrupt:
-            self.shutdown()
-
-    def shutdown(self):
-        """
-            This method shuts down the Home Server CoAP server
-            (or what can be viewed as the Home Server Core)
-        """
-        logger.info("Shutting down server")
-        self.close()
-        logger.info("Server is down")
-        sys.exit(0)
-
-
+                if transaction.response is not None:
+                    if transaction.response.type == defines.Types["CON"]:
+                        self._start_retransmission(transaction, transaction.response)
+                    self.send_datagram(transaction.response)
+    
     def _retransmit(self, transaction, message, future_time, retransmit_count):
         """
         Thread function to retransmit the message in the future
@@ -211,6 +137,7 @@ class HomeServer(CoAP):
                     for d in self.devices.devices.itervalues():
                         if transaction.request.source[0] == d.address:
                             d.delete()
+                            transaction.resource.deleted = True
                             break
 
             try:
@@ -219,3 +146,112 @@ class HomeServer(CoAP):
                 pass
             transaction.retransmit_stop = None
             transaction.retransmit_thread = None
+
+    #
+    # This methods were created to modify the behaviour of some
+    # other original CoAPthon methods
+    def observe_layer_notify(self, resource, root=None):
+        """
+        Prepare notification for the resource to all interested observers.
+
+        :rtype: list
+        :param resource: the resource for which send a new notification
+        :param root: deprecated
+        :return: the list of transactions to be notified
+        """
+        ret = []
+        if root is not None:
+            resource_list = root.with_prefix_resource(resource.path)
+        else:
+            resource_list = [resource]
+        for key in self._observeLayer._relations.keys():
+            if self._observeLayer._relations[key].transaction.resource in resource_list:
+                if self._observeLayer._relations[key].non_counter > defines.MAX_NON_NOTIFICATIONS \
+                        or self._observeLayer._relations[key].transaction.request.type == defines.Types["CON"]:
+                    self._observeLayer._relations[key].transaction.response.type = defines.Types["CON"]
+                    self._observeLayer._relations[key].non_counter = 0
+                elif self._observeLayer._relations[key].transaction.request.type == defines.Types["NON"]:
+                    self._observeLayer._relations[key].non_counter += 1
+                    self._observeLayer._relations[key].transaction.response.type = defines.Types["NON"]
+                self._observeLayer._relations[key].transaction.resource = resource
+                ret.append(self._observeLayer._relations[key].transaction)
+        return ret
+
+    def notify_owner(self, resource):
+        """
+        Notifies the observers of a certain resource.
+
+        :param resource: the resource
+        """
+        # observers = self._observeLayer.notify(resource)
+        observers = self.observe_layer_notify(resource)
+        logger.debug("Notifying Owner")
+        for transaction in observers:
+            if transaction.request.source[0] == resource.device.address:
+                logger.debug("Notifying: "+transaction.request.source[0])
+                with transaction:
+                    transaction.response = None
+                    transaction = self._requestLayer.receive_request(transaction)
+                    if not transaction.resource.deleted:
+                        transaction = self._observeLayer.send_response(transaction)
+                        transaction = self._blockLayer.send_response(transaction)
+                        transaction = self._messageLayer.send_response(transaction)
+                        if transaction.response is not None:
+                            if transaction.response.type == defines.Types["CON"]:
+                                self._start_retransmission(transaction, transaction.response)
+
+                            self.send_datagram(transaction.response)
+                            break
+
+    def notify_others(self, resource):
+        """
+        Notifies the observers of a certain resource.
+
+        :param resource: the resource
+        """
+        observers = self._observeLayer.notify(resource)
+        logger.debug("Notifying Others")
+        for transaction in observers:
+            if transaction.request.source[0] != resource.device.address:
+                logger.debug("Notifying: "+transaction.request.source[0])
+                with transaction:
+                    transaction.response = None
+                    transaction = self._requestLayer.receive_request(transaction)
+                    transaction = self._observeLayer.send_response(transaction)
+                    transaction = self._blockLayer.send_response(transaction)
+                    transaction = self._messageLayer.send_response(transaction)
+                    if transaction.response is not None:
+                        if transaction.response.type == defines.Types["CON"]:
+                            self._start_retransmission(transaction, transaction.response)
+
+                        self.send_datagram(transaction.response)
+
+    #
+    # Start the Home Server
+    def start(self):
+        """
+            This method starts the Home Server CoAP server
+            (or what can be viewed as the Home Server Core)
+        """
+        try:
+            logger.info("Home Server Started...")
+
+            mon_t = threading.Thread(target=self.devices.monitoring_devices)
+            mon_t.start()
+
+            self.listen(10)
+        except KeyboardInterrupt:
+            self.shutdown()
+
+    def shutdown(self):
+        """
+            This method shuts down the Home Server CoAP server
+            (or what can be viewed as the Home Server Core)
+        """
+        logger.info("Shutting down server")
+        self.close()
+        logger.info("Server is down")
+        sys.exit(0)
+
+
+    

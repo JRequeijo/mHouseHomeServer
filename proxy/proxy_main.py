@@ -344,14 +344,36 @@ def change_device_state(device_id):
             try:
                 resp = comm.put("/devices/"+str(device_id)+"/state", json.dumps(body), timeout=settings.COMM_TIMEOUT)
             except AppError as err:
-                abort(504, err.msg)
-            resp = comm.get_response(resp)
+                resp_get = get_info()
+                resp_json = json.loads(resp_get)
+                if resp_json:
+                    abort(502, "The device is not responding")
+                else:
+                    abort(err.code, err.msg)
 
+            resp = comm.get_response(resp)
             err_check = check_error_response(resp)
             if err_check is not None:
                 abort(err_check[0], err_check[1])
 
-            return send_response(resp.payload, resp.code)
+            try:
+                resp_json = json.loads(resp.payload)
+                tryout = 0
+                while resp_json["wanted_state"] != resp_json["current_state"] and (tryout < 3):
+                    resp_get = get_device_state(device_id)
+                    resp_json = json.loads(resp_get)
+                    tryout += 1
+
+                if resp_json["wanted_state"] == resp_json["current_state"]:
+                    return resp_get
+                else:
+                    print "DEVICE IS NOT RESPONDING"
+                    raise AppError(502, "The device is not responding")
+            except AppError as err:
+                abort(err.code, err.msg)
+            except:
+                abort(500, "FATAL ERROR")
+
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -515,6 +537,7 @@ def check_error_response(response):
 @proxy.error(405)
 @proxy.error(415)
 @proxy.error(500)
+@proxy.error(502)
 @proxy.error(504)
 def errorHandler(error):
     return send_response(json.dumps({"error_code": error.status_code, "error_msg": error.body}))

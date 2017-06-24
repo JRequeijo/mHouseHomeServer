@@ -105,7 +105,6 @@ class Device(Resource):
         """
         return {"local_id": self.id, "name": self.name, "address": self.address,\
                 "port":self.port, "device_type": self.device_type.type.id,\
-                "services": self.services.get_services(), "state":self.state.get_simplified_info(),\
                 "universal_id":self.universal_id, "timeout":self.timeout}
 
     def get_json(self):
@@ -172,16 +171,19 @@ class Device(Resource):
                             "Content must be application/json")
 
     def render_DELETE_advanced(self, request, response):
-        self.devices_list.remove_device(self.id)
+        if request.source[0] == self.address:
+            self.devices_list.remove_device(self.id)
 
-        self.device_type.delete()
-        self.state.delete()
-        self.services.delete()
+            self.device_type.delete()
+            self.state.delete()
+            self.services.delete()
 
-        if not settings.WORKING_OFFLINE:
-            thread.start_new_thread(unregist_device_from_cloud, (self.universal_id,))
+            if not settings.WORKING_OFFLINE:
+                thread.start_new_thread(unregist_device_from_cloud, (self.universal_id,))
 
-        return True
+            return True, response
+        else:
+            return error(self, response, defines.Codes.FORBIDDEN, "You do not have permission to delete this device")
 
 ## Devices List Resource
 class DevicesList(Resource):
@@ -253,7 +255,8 @@ class DevicesList(Resource):
         existing_dev = self.check_existing_device(address)
         if existing_dev is not None:
             raise AppError(defines.Codes.BAD_REQUEST, "Device with address ("+address\
-                                                        +") already exists")
+                                                        +") already exists with ID ("+\
+                                                        str(existing_dev)+")")
         else:
             device_id = self.server.id_gen.new_device_id()
 
@@ -286,10 +289,14 @@ class DevicesList(Resource):
         ret = []
         for ele in self.devices.values():
             d = ele.get_info()
-            d.pop("state")
-            d.pop("services")
             ret.append(d)
         return ret
+
+    def get_created_device(self, device):
+        data = device.get_info()
+        js = json.dumps(data)
+
+        return (defines.Content_types[self.res_content_type], js)
 
     def delete(self):
         """
@@ -380,7 +387,8 @@ class DevicesList(Resource):
                 if not settings.WORKING_OFFLINE:
                     thread.start_new_thread(regist_device_on_cloud, (dev,))
 
-                self.payload = self.get_payload()
+                # self.payload = self.get_payload()
+                self.payload = self.get_created_device(dev)
                 return status(self, response, defines.Codes.CREATED)
 
             except AppError as err:

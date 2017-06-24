@@ -130,7 +130,6 @@ class Communicator(object):
         """
         return Response(data)
 
-
 class Response(object):
     """
         This represents a Response to a call made by the communicator to the

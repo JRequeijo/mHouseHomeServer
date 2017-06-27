@@ -1,1 +1,1 @@
-{"name": "Server1", "device_count": 2, "id": 1, "email": "josediogo_rd@hotmail.com", "multicast": false, "address": "192.168.1.67", "active": true, "password": "Petrucci1", "port": 5683}
+{"name": "Server1", "device_count": 2, "id": 1, "email": "josediogo_rd@hotmail.com", "multicast": false, "address": "192.168.1.67", "active": false, "password": "Petrucci1", "port": 5683}

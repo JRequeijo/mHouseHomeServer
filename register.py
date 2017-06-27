@@ -95,7 +95,12 @@ def register_from_file():
 
         client.auth = (email, password)
         try:
-            resp = client.get(base_url+"api/servers/"+str(server_id)+"/")
+            data = {}
+            data["name"] = settings.HOME_SERVER_NAME
+            data["address"] = settings.HOME_SERVER_ADDRESS
+
+            resp = client.patch(base_url+"api/servers/"+str(server_id)+"/?fromserver=true",\
+                                data=json.dumps(data))
         except:
             logger.error("You do not have connection to the internet or the cloud server is down")
             return False

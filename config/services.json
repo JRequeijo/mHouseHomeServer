@@ -1,1 +1,1 @@
-{"SERVICES": [{"core_service_ref": 1, "id": 6, "device_count": 1, "name": "Heating"}, {"core_service_ref": 2, "id": 7, "device_count": 0, "name": "Lighting"}]}
+{"SERVICES": [{"core_service_ref": 1, "id": 6, "device_count": 0, "name": "Heating"}, {"core_service_ref": 2, "id": 7, "device_count": 0, "name": "Lighting"}]}

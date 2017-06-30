@@ -359,12 +359,15 @@ def change_device_state(device_id):
             try:
                 resp_json = json.loads(resp.payload)
                 tryout = 0
+                resp_get = None
                 while resp_json["wanted_state"] != resp_json["current_state"] and (tryout < 3):
                     resp_get = get_device_state(device_id)
                     resp_json = json.loads(resp_get)
                     tryout += 1
 
                 if resp_json["wanted_state"] == resp_json["current_state"]:
+                    if not resp_get:
+                        resp_get = get_device_state(device_id)
                     return resp_get
                 else:
                     print "DEVICE IS NOT RESPONDING"

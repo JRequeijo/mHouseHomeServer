@@ -118,6 +118,8 @@ def register_from_file():
             data = {}
             data["name"] = settings.HOME_SERVER_NAME
             data["address"] = settings.HOME_SERVER_ADDRESS
+            data["multicast"] = settings.COAP_MULTICAST
+            data["port"] = settings.COAP_PORT
 
             try:
                 resp = client.post(base_url+"api/servers/", data=json.dumps(data))
@@ -149,7 +151,7 @@ def register_from_file():
 
                 if "detail" in js.keys():
                     logger.error("Error ("+ str(resp.status_code)+"): "+str(js["detail"][0]))
-
+                
                 logger.error("Please check if data on "+settings.SERVER_CONFIG_FILE+\
                                 " file is correct. If you prefer you can delete that file to register from scratch.")
                 return False

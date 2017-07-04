@@ -137,6 +137,36 @@ class Device(Resource):
         del self.server.root[self.root_uri]
         return True
 
+    def update_all_info(self, data):
+        if self.server.configs.validate_device_type(data["device_type"]):
+            self.device_type_id = data["device_type"]
+        else:
+            raise AppError(defines.Codes.BAD_REQUEST,\
+                            "Invalid device type ("+str(data["device_type"])+")")
+
+        if self.server.services.validate_services(data["services"]):
+            self.services_aux = data["services"]
+        else:
+            raise AppError(defines.Codes.BAD_REQUEST,\
+                            "Invalid services provided")
+        
+        self.timeout = int(data["timeout"])
+
+        self.device_type.delete()
+        self.state.delete()
+        self.services.delete()
+
+        # type of the device
+        self.device_type = DeviceTypeResource(self)
+
+        # state of the device - to modify periodically
+        self.state = DeviceState(self)
+
+        # services of the device
+        self.services = DeviceServicesResource(self)
+
+        self.last_access = time.time()
+
     ## CoAP Methods
     def render_GET(self, request):
         if self.address == str(request.source[0]):
@@ -158,7 +188,8 @@ class Device(Resource):
                 self.name = body["name"]
 
                 if self.address == str(request.source[0]):
-                    self.last_access = time.time()
+                    self.update_all_info(body)
+                    regist_device_on_cloud(self)
 
                 self.payload = self.get_payload()
                 return status(self, response, defines.Codes.CHANGED)

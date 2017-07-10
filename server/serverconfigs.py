@@ -43,12 +43,15 @@ class DeviceType(object):
         except (ValueError, TypeError):
             raise Exception("Invalid values on scalar value type arguments")
 
-    def get_info(self):
+    def get_info(self, full_description=False):
         """
             This method returns a dictionary with all the information
             correspondent to a given Device Type.
         """
-        return {"id": self.id, "name": self.name, "properties": self.get_properties()}
+        if full_description:
+            return {"id": self.id, "name": self.name, "properties": self.get_properties()}
+        else:
+            return {"id": self.id, "name": self.name, "properties": self.get_properties_ids()}
 
     def get_properties(self):
         """
@@ -57,6 +60,15 @@ class DeviceType(object):
         prop = []
         for p in self.properties:
             prop.append(p.get_info())
+        return prop
+
+    def get_properties_ids(self):
+        """
+            This method returns all properties that a given Device Type has.
+        """
+        prop = []
+        for p in self.properties:
+            prop.append(p.id)
         return prop
 
     def default_state(self):
@@ -631,11 +643,18 @@ class HomeServerConfigs(Resource):
                             "Request body should be a json element with a key "+str(c_type)+" and a list of "+str(c_type)+" as value")
     #
     ### COAP METHODS
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 
     def render_PUT_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+          
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 query = request.uri_query

@@ -60,12 +60,18 @@ class HomeServerInfo(Resource):
         """
         return (defines.Content_types[self.res_content_type], self.get_json())
 
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 
     def render_PUT_advanced(self, request, response):
-
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+          
         if request.content_type is defines.Content_types.get("application/json"):
             if str(request.source[0]) == self.server.address:
                 try:
@@ -86,7 +92,7 @@ class HomeServerInfo(Resource):
                                 "Field ("+str(err.message)+") not found on request json body")
             else:
                 return error(self, response, defines.Codes.FORBIDDEN,\
-                            "Only from the cloud the server info can be updated")
+                            "The server info can only be updated from the Cloud")
         else:
             return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                             "Content must be application/json")

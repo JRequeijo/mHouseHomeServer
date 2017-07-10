@@ -199,11 +199,18 @@ class HomeServerServices(Resource):
                             "Request body should be a json element with a key SERVICES and a list of services as value")
     #
     ### COAP METHODS
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 
     def render_PUT_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+          
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)

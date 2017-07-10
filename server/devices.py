@@ -138,19 +138,27 @@ class Device(Resource):
         return True
 
     def update_all_info(self, data):
-        if self.server.configs.validate_device_type(data["device_type"]):
-            self.device_type_id = data["device_type"]
+        try:
+            dev_type = data["device_type"]
+            servs = data["services"]
+            timeout = data["timeout"]
+        except KeyError as err:
+            raise AppError(defines.Codes.BAD_REQUEST,\
+                            "Field ("+err+") is missing")
+
+        if self.server.configs.validate_device_type(dev_type):
+            self.device_type_id = dev_type
         else:
             raise AppError(defines.Codes.BAD_REQUEST,\
-                            "Invalid device type ("+str(data["device_type"])+")")
+                            "Invalid device type ("+str(dev_type)+")")
 
-        if self.server.services.validate_services(data["services"]):
-            self.services_aux = data["services"]
+        if self.server.services.validate_services(servs):
+            self.services_aux = servs
         else:
             raise AppError(defines.Codes.BAD_REQUEST,\
                             "Invalid services provided")
         
-        self.timeout = int(data["timeout"])
+        self.timeout = int(timeout)
 
         self.device_type.delete()
         self.state.delete()
@@ -168,14 +176,22 @@ class Device(Resource):
         self.last_access = time.time()
 
     ## CoAP Methods
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+
         if self.address == str(request.source[0]):
             self.last_access = time.time()
 
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 
     def render_PUT_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+
         if(request.content_type is defines.Content_types.get("application/json")):
             try:
                 body = json.loads(request.payload)
@@ -202,6 +218,10 @@ class Device(Resource):
                             "Content must be application/json")
 
     def render_DELETE_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+          
         if request.source[0] == self.address:
             self.devices_list.remove_device(self.id)
 
@@ -392,15 +412,23 @@ class DevicesList(Resource):
         sys.exit(0)
 
     ## CoAP Methods
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+
         for d in self.devices.itervalues():
             if d.address == str(request.source[0]):
                 d.last_access = time.time()
 
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 
     def render_POST_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+          
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)
@@ -418,7 +446,6 @@ class DevicesList(Resource):
                 if not settings.WORKING_OFFLINE:
                     thread.start_new_thread(regist_device_on_cloud, (dev,))
 
-                # self.payload = self.get_payload()
                 self.payload = self.get_created_device(dev)
                 return status(self, response, defines.Codes.CREATED)
 
@@ -649,14 +676,22 @@ class DeviceState(Resource):
         return True
 
     # CoAP Methods
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+
         if self.device.address == str(request.source[0]):
             self.device.last_access = time.time()
 
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 
     def render_PUT_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+          
         if request.content_type is defines.Content_types.get("application/json"):
             origin = request.source
             try:
@@ -727,7 +762,7 @@ class DeviceTypeResource(Resource):
             This method returns a dictionary with the device type information
             correspondent to a given device
         """
-        return {"device_id": self.device.id, "device_type": self.type.get_info()}
+        return {"device_id": self.device.id, "device_type": self.type.get_info(True)}
 
     def get_json(self):
         """
@@ -751,12 +786,16 @@ class DeviceTypeResource(Resource):
         return True
 
     ## CoAP Methods
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+
         if self.device.address == str(request.source[0]):
             self.device.last_access = time.time()
 
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 ## Device Services Resource
 class DeviceServicesResource(Resource):
     """
@@ -830,14 +869,22 @@ class DeviceServicesResource(Resource):
         return True
 
     ## CoAP Methods
-    def render_GET(self, request):
+    def render_GET_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+
         if self.device.address == str(request.source[0]):
             self.device.last_access = time.time()
 
         self.payload = self.get_payload()
-        return self
+        return status(self, response, defines.Codes.CONTENT)
 
     def render_PUT_advanced(self, request, response):
+        if request.accept != defines.Content_types["application/json"] and request.accept != None:
+            return error(self, response, defines.Codes.NOT_ACCEPTABLE,\
+                                    "Could not satisfy the request Accept header")
+          
         if request.content_type is defines.Content_types.get("application/json"):
             try:
                 body = json.loads(request.payload)
@@ -867,54 +914,4 @@ class DeviceServicesResource(Resource):
             return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
                         "Request content format not application/json")
 
-    def render_POST_advanced(self, request, response):
-        if request.content_type is defines.Content_types.get("application/json"):
-            try:
-                body = json.loads(request.payload)
-            except:
-                return error(self, response, defines.Codes.BAD_REQUEST,\
-                                    "Request content must be json formated")
-
-            try:
-                if self.device.server.services.validate_services(body):
-                    for n in body:
-                        serv = int(n)
-                        if serv not in self.services:
-                            self.services.append(serv)
-                else:
-                    return error(self, response, defines.Codes.BAD_REQUEST,\
-                                    "Services provided are not valid")
-                
-                if self.device.address == str(request.source[0]):
-                    self.device.last_access = time.time()
-
-                self.payload = self.get_payload()
-                return status(self, response, defines.Codes.CHANGED)
-            except:
-                return error(self, response, defines.Codes.BAD_REQUEST,\
-                "Request content must specify a list of service ids in json format")
-        else:
-            return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\
-                        "Request content format not application/json")
-
-    def render_DELETE_advanced(self, request, response):
-        try:
-            query = request.uri_query
-            aux = [query]
-            d = dict(s.split("=") for s in aux)
-            id = int(d["id"])
-            try:
-                self.services.remove(id)
-            except:
-                return error(self, response, defines.Codes.NOT_FOUND,\
-                            "Service with id ("+str(id)+") is not attributed for this device")
-            
-            if self.device.address == str(request.source[0]):
-                self.device.last_access = time.time()
-
-            self.payload = self.get_payload()
-            return status(self, response, defines.Codes.DELETED)
-        except:
-            return error(self, response, defines.Codes.BAD_REQUEST,\
-            "Request query must specify an id of the service to remove")
-
+    

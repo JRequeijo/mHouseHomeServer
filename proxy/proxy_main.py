@@ -65,10 +65,15 @@ def save_server_confs(new_name):
 @proxy.get("/")
 @proxy.get("/info")
 def get_info():
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/info", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
 
     resp = comm.get_response(resp)
 
@@ -78,8 +83,12 @@ def get_info():
 
     return send_response(resp.payload, resp.code)
 
+@proxy.put("/")
 @proxy.put("/info")
 def update_info():
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -104,6 +113,10 @@ def update_info():
                 return send_response(resp.payload, resp.code)
             except KeyError as err:
                 abort(400, "Field ("+err.message+") missing on request json body")
+            except AppError as err:
+                abort(err.code, err.msg)
+            except:
+                abort(500, "Unknown Proxy fatal error")
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -113,10 +126,15 @@ def update_info():
 ### Server Services Endpoints ###
 @proxy.get("/services")
 def get_server_services():
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/services", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
 
     resp = comm.get_response(resp)
 
@@ -129,6 +147,9 @@ def get_server_services():
 
 @proxy.put("/services")
 def update_server_services():
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -151,8 +172,10 @@ def update_server_services():
                 return send_response(resp.payload, resp.code)
             except KeyError as err:
                 abort(400, "Field ("+err.message+") missing on request json body")
-            # except:
-            #     abort(500, "Fatal Server Error")
+            except AppError as err:
+                abort(err.code, err.msg)
+            except:
+                abort(500, "Unknown Proxy fatal error")
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -161,10 +184,15 @@ def update_server_services():
 ### Server Configs Endpoints ###
 @proxy.get("/configs")
 def get_server_configurations():
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/configs", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
 
     resp = comm.get_response(resp)
 
@@ -177,11 +205,15 @@ def get_server_configurations():
 
 @proxy.put("/configs")
 def update_server_configurations():
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     if request.headers["content-type"] == "application/json":
         try:
             c_type = request.query.get("type")
         except:
             abort(400, "Request query must specify a type of the config to update")
+        
         try:
             body = request.json
         except:
@@ -206,8 +238,10 @@ def update_server_configurations():
                 return send_response(resp.payload, resp.code)
             except KeyError as err:
                 abort(400, "Field ("+str(err)+") missing on request json body")
-            # except:
-            #     abort(500, "Fatal Server Error")
+            except AppError as err:
+                abort(err.code, err.msg)
+            except:
+                abort(500, "Unknown Proxy fatal error")
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -217,10 +251,16 @@ def update_server_configurations():
 # ###### Devices List Endpoints########
 @proxy.get("/devices")
 def get_all_devices():
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/devices", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
+
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -228,31 +268,6 @@ def get_all_devices():
         abort(err_check[0], err_check[1])
 
     return send_response(resp.payload, resp.code)
-
-@proxy.post("/devices")
-def regist_device():
-    if request.headers["content-type"] == "application/json":
-        try:
-            body = request.json
-        except:
-            abort(400, "Request body not properly json formated")
-
-        if body is not None:
-            try:
-                resp = comm.post("/devices", json.dumps(body), timeout=settings.COMM_TIMEOUT)
-            except AppError as err:
-                abort(504, err.msg)
-            resp = comm.get_response(resp)
-
-            err_check = check_error_response(resp)
-            if err_check is not None:
-                abort(err_check[0], err_check[1])
-
-            return send_response(resp.payload, resp.code)
-        else:
-            abort(400, "Request body formated in json is missing")
-    else:
-        abort(415, "Request body content format not json")
 
 
 
@@ -260,10 +275,16 @@ def regist_device():
 # ###### Single Device Endpoints########
 @proxy.get("/devices/<device_id:int>")
 def get_device(device_id):
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/devices/"+str(device_id), timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
+
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -272,22 +293,12 @@ def get_device(device_id):
 
     return send_response(resp.payload, resp.code)
 
-@proxy.delete("/devices/<device_id:int>")
-def unregist_device(device_id):
-    try:
-        resp = comm.delete("/devices/"+str(device_id), timeout=settings.COMM_TIMEOUT)
-    except AppError as err:
-        abort(504, err.msg)
-    resp = comm.get_response(resp)
-
-    err_check = check_error_response(resp)
-    if err_check is not None:
-        abort(err_check[0], err_check[1])
-
-    return send_response(resp.payload, resp.code)
 
 @proxy.put("/devices/<device_id:int>")
 def update_device_info(device_id):
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -309,8 +320,10 @@ def update_device_info(device_id):
                 return send_response(resp.payload, resp.code)
             except ValueError as err:
                 abort(400, "Invalid service name ("+body["name"]+")")
+            except AppError as err:
+                abort(err.code, err.msg)
             except:
-                abort(500, "Fatal Server Error")
+                abort(500, "Unknown Proxy fatal error")
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -320,10 +333,16 @@ def update_device_info(device_id):
 # ###### Device State Endpoints########
 @proxy.get("/devices/<device_id:int>/state")
 def get_device_state(device_id):
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/devices/"+str(device_id)+"/state", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
+
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -334,6 +353,9 @@ def get_device_state(device_id):
 
 @proxy.put("/devices/<device_id:int>/state")
 def change_device_state(device_id):
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -350,6 +372,8 @@ def change_device_state(device_id):
                     abort(502, "The device is not responding")
                 else:
                     abort(err.code, err.msg)
+            except:
+                abort(500, "Unknown Proxy fatal error")
 
             resp = comm.get_response(resp)
             err_check = check_error_response(resp)
@@ -375,7 +399,7 @@ def change_device_state(device_id):
             except AppError as err:
                 abort(err.code, err.msg)
             except:
-                abort(500, "FATAL ERROR")
+                abort(500, "Unknown Proxy fatal error")
 
         else:
             abort(400, "Request body formated in json is missing")
@@ -387,10 +411,16 @@ def change_device_state(device_id):
 # ###### Device Type Endpoints########
 @proxy.get("/devices/<device_id:int>/type")
 def get_device_type(device_id):
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/devices/"+str(device_id)+"/type", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
+
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -404,10 +434,16 @@ def get_device_type(device_id):
 # ###### Device Services Endpoints########
 @proxy.get("/devices/<device_id:int>/services")
 def get_device_services(device_id):
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     try:
         resp = comm.get("/devices/"+str(device_id)+"/services", timeout=settings.COMM_TIMEOUT)
     except AppError as err:
-        abort(504, err.msg)
+        abort(err.code, err.msg)
+    except:
+        abort(500, "Unknown Proxy fatal error")
+
     resp = comm.get_response(resp)
 
     err_check = check_error_response(resp)
@@ -418,6 +454,9 @@ def get_device_services(device_id):
 
 @proxy.put("/devices/<device_id:int>/services")
 def update_services_on_device(device_id):
+    if request.headers["accept"] != "application/json" and request.headers["accept"] != "*/*":
+        abort(406, "Could not satisfy the request Accept header")
+
     if request.headers["content-type"] == "application/json":
         try:
             body = request.json
@@ -441,79 +480,22 @@ def update_services_on_device(device_id):
                         abort(err_check[0], err_check[1])
 
                     return send_response(resp.payload, resp.code)
-
+                
+                except AppError as err:
+                    abort(err.code, err.msg)
                 except:
-                    abort(400, "Request body must specify a list of service ids in json format")
+                    abort(400, "Request body must specify a list of service IDs in json format")
             else:
-                abort(400, "Request body must specify a list of service ids in json format")
-        else:
-            abort(400, "Request body formated in json is missing")
-    else:
-        abort(415, "Request body content format not json")
-
-@proxy.post("/devices/<device_id:int>/services")
-def add_service_to_device(device_id):
-    if request.headers["content-type"] == "application/json":
-        try:
-            body = request.json
-        except:
-            abort(400, "Request body not properly json formated")
-
-        if body is not None:
-            if isinstance(body, list):
-                try:
-                    data = []
-                    for n in body:
-                        serv = int(n)
-                        data.append(serv)
-
-                    resp = comm.post("/devices/"+str(device_id)+"/services", json.dumps(data))
-                    resp = comm.get_response(resp)
-
-                    err_check = check_error_response(resp)
-                    if err_check is not None:
-                        abort(err_check[0], err_check[1])
-
-                    return send_response(resp.payload, resp.code)
-
-                except:
-                    abort(400, "Request body must specify a list of service ids in json format")
-            else:
-                abort(400, "Request body must specify a list of service ids in json format")
+                abort(400, "Request body must specify a list of service IDs in json format")
         else:
             abort(400, "Request body formated in json is missing")
     else:
         abort(415, "Request body content format not json")
 
 
-@proxy.delete("/devices/<device_id:int>/services")
-def delete_service_from_device(device_id):
-
-    try:
-        s_id = request.query.get("id")
-        s_id = int(s_id)
-    except:
-        abort(400, "Request query must specify a service id to delete")
-
-    resp = comm.delete("/devices/"+str(device_id)+"/services?id="+str(s_id))
-    resp = comm.get_response(resp)
-
-    err_check = check_error_response(resp)
-    if err_check is not None:
-        abort(err_check[0], err_check[1])
-
-    return send_response(resp.payload, resp.code)
 
 #
 # ######## Helper Functions #######
-
-# #change to use authentication framework
-# def authorize(request):
-#     if (request.environ.get("REMOTE_ADDR") == get_my_ip()) and (request.headers["user-agent"] == "app-communicator"):
-#         return True
-#     else:
-#         return False
-
 def send_response(data, code=None):
     if code is not None:
         response.status = coap2http_code(code)[0]
@@ -538,6 +520,7 @@ def check_error_response(response):
 @proxy.error(404)
 @proxy.error(403)
 @proxy.error(405)
+@proxy.error(406)
 @proxy.error(415)
 @proxy.error(500)
 @proxy.error(502)

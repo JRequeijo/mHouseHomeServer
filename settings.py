@@ -39,7 +39,7 @@ QUIET = False
 """
 Specification of the IP address and port for the proxy and the CoAP server
 """
-PROXY_ADDR = utils.get_my_ip()
+PROXY_ADDR = utils.get_my_ip(public=True)
 PROXY_PORT = 8080
 
 COAP_ADDR = utils.get_my_ip()
@@ -64,5 +64,5 @@ has connection with the cloud service specified by the URL. If it is set to True
 the HomeServer works without internet connection but the devices are only
 reachable from the HomeServer"s REST API
 """
-CLOUD_BASE_URL = "http://127.0.0.1:8000/"
-ALLOW_WORKING_OFFLINE = True
+CLOUD_BASE_URL = "http://mhousecloud-env.2bdysa4bgi.eu-west-1.elasticbeanstalk.com/"
+ALLOW_WORKING_OFFLINE = False

@@ -535,7 +535,7 @@ def run_proxy():
     logger.info("Starting Proxy...") 
     try:
         debug(settings.DEBUG)
-        run(proxy, host=settings.PROXY_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
+        run(proxy, host=settings.COAP_ADDR, port=settings.PROXY_PORT, quiet=settings.QUIET)
     finally:
         logger.info("Shutting down proxy")
         logger.info("Proxy is down")

@@ -34,7 +34,7 @@ class HomeServerInfo(Resource):
         self.res_content_type = "application/json"
         self.payload = self.get_payload()
 
-        self.resource_type = "HomeServer"
+        self.resource_type = "HomeServerInfo"
         self.interface_type = "if1"
 
     def get_info(self):
@@ -43,8 +43,9 @@ class HomeServerInfo(Resource):
             represented by this CoAP resource.
         """
         return {"server_id": self.server.id, "name": self.server.name,\
-                 "address": self.server.address, "port": self.server.port,\
-                 "multicast": self.server.multicast}
+                 "coap_address": self.server.coapaddress, "coap_port": self.server.coapport,\
+                 "multicast": self.server.multicast, "proxy_address": self.server.proxyaddress,\
+                 "proxy_port": self.server.proxyport}
 
     def get_json(self):
         """

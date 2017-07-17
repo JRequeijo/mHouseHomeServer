@@ -10,7 +10,7 @@ sys.path.append(my_dir+"/../proxy/")
 
 import settings
 
-from homeserver import HomeServer
+from coapserver import CoAPServer
 
 logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ def run_homeserver():
         logger.error("ERROR: Unable to open server configuration file. Server probably not registed.")
         sys.exit()
 
-    server = HomeServer(server_conf["id"], server_conf["name"], server_conf["address"])
+    server = CoAPServer(server_conf["id"], server_conf["name"])
     server.start()
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@
 """
 import json
 import socket
+import requests
 
 from coapthon import defines
 from coapthon.resources.resource import Resource
@@ -120,19 +121,29 @@ def validate_IPv4(addr):
     else:
         return False
 
-def get_my_ip():
+def get_my_ip(public=False):
     """
         This function get the local IPv4 address for the HomeServer
     """
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.connect(("coap.technology", 80))
-        myip = sock.getsockname()[0]
-        sock.close()
+    if not public:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.connect(("coap.technology", 80))
+            myip = sock.getsockname()[0]
+            sock.close()
+            return myip
+        except:
+            print "ERROR: Unable to connect to Network"
+            raise AppError(500, "Unable to connect to Network")
+    else:
+        # try:
+        resp = requests.get("https://jsonip.com/")
+        myip = json.loads(resp.text)
+        myip = myip["ip"]
         return myip
-    except:
-        print "ERROR: Unable to connect to Network"
-        raise AppError(500, "Unable to connect to Network")
+        # except:
+        #         print "ERROR: Unable to connect to Network"
+        #         raise AppError(500, "Unable to connect to Network")
 
 def check_on_body(body, keys):
     """

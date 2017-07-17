@@ -23,24 +23,25 @@ __author__ = "Jose Requeijo Dias"
 logger = logging.getLogger(__name__)
 
 
-class HomeServer(CoAP):
+class CoAPServer(CoAP):
     """
         This is the Home Server Main CoAP Class.
         It is the CoAP server that represents the Home Server Core.
     """
-    def __init__(self, server_id, name, address):
+    def __init__(self, server_id, name):
 
         self.id = server_id
         self.name = name
 
-        self.address = address
-
         self.coapaddress = settings.COAP_ADDR
-        self.port = settings.COAP_PORT
+        self.coapport = settings.COAP_PORT
         self.multicast = settings.COAP_MULTICAST
 
+        self.proxyaddress = settings.PROXY_ADDR
+        self.proxyport = settings.PROXY_PORT
+
         logger.info("Starting CoAP Server...")
-        CoAP.__init__(self, (self.coapaddress, self.port), self.multicast)
+        CoAP.__init__(self, (self.coapaddress, self.coapport), self.multicast)
 
         self.info = HomeServerInfo(self)
 
@@ -49,7 +50,7 @@ class HomeServer(CoAP):
         self.services = HomeServerServices(self)
         self.configs = HomeServerConfigs(self)
 
-        logger.info("CoAP Server start on " + self.address + ":" + str(self.port))
+        logger.info("CoAP Server start on " + self.coapaddress + ":" + str(self.coapport))
         logger.info(self.root.dump())
 
     #

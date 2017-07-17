@@ -39,7 +39,10 @@ def register():
 
         settings.HOME_SERVER_ID = confs["id"]
         settings.HOME_SERVER_NAME = confs["name"]
-        settings.HOME_SERVER_ADDRESS = confs["address"]
+        settings.HOME_SERVER_COAP_ADDRESS = confs["coap_address"]
+        settings.HOME_SERVER_COAP_PORT = confs["coap_port"]
+        settings.HOME_SERVER_PROXY_ADDRESS = confs["proxy_address"]
+        settings.HOME_SERVER_PROXY_PORT = confs["proxy_port"]
         settings.USER_PASSWORD = confs["password"]
         settings.USER_EMAIL = confs["email"]
 
@@ -97,7 +100,10 @@ def register_from_file():
         try:
             data = {}
             data["name"] = settings.HOME_SERVER_NAME
-            data["address"] = settings.HOME_SERVER_ADDRESS
+            data["coap_address"] = settings.HOME_SERVER_COAP_ADDRESS
+            data["coap_port"] = settings.HOME_SERVER_COAP_PORT
+            data["proxy_address"] = settings.HOME_SERVER_PROXY_ADDRESS
+            data["proxy_port"] = settings.HOME_SERVER_PROXY_PORT
 
             resp = client.patch(base_url+"api/servers/"+str(server_id)+"/?fromserver=true",\
                                 data=json.dumps(data))
@@ -117,9 +123,11 @@ def register_from_file():
         else:
             data = {}
             data["name"] = settings.HOME_SERVER_NAME
-            data["address"] = settings.HOME_SERVER_ADDRESS
+            data["coap_address"] = settings.HOME_SERVER_COAP_ADDRESS
+            data["coap_port"] = settings.HOME_SERVER_COAP_PORT
+            data["proxy_address"] = settings.HOME_SERVER_PROXY_ADDRESS
+            data["proxy_port"] = settings.HOME_SERVER_PROXY_PORT
             data["multicast"] = settings.COAP_MULTICAST
-            data["port"] = settings.COAP_PORT
 
             try:
                 resp = client.post(base_url+"api/servers/", data=json.dumps(data))
@@ -131,7 +139,7 @@ def register_from_file():
                 f = open(settings.SERVER_CONFIG_FILE, "w")
                 js = json.loads(resp.text)
                 for ele in js["servers"]:
-                    if ele["address"] == data["address"]:
+                    if ele["coap_address"] == data["coap_address"]:
                         serv = ele
                         break
 
@@ -142,15 +150,7 @@ def register_from_file():
                 logger.info("Server Registed Successfully")
                 return True
             else:
-                js = json.loads(resp.text)
-                if "address" in js.keys():
-                    logger.error("Error ("+ str(resp.status_code)+"): "+str(js["address"][0]))
-
-                if "name" in js.keys():
-                    logger.error("Error ("+ str(resp.status_code)+"): "+str(js["name"][0]))
-
-                if "detail" in js.keys():
-                    logger.error("Error ("+ str(resp.status_code)+"): "+str(js["detail"][0]))
+                logger.error("Error ("+ str(resp.status_code)+"): "+str(resp.text))
                 
                 logger.error("Please check if data on "+settings.SERVER_CONFIG_FILE+\
                                 " file is correct. If you prefer you can delete that file to register from scratch.")
@@ -189,19 +189,27 @@ def register_from_scratch():
         email_ok = False
         while not reg_ok:
             while not ip_ok:
-                # ip_addr = raw_input("Enter your server IP address: ")
-                # ip_addr = ip_addr.strip()
-                ip_addr = settings.COAP_ADDR
-                port = settings.COAP_PORT
+                
+                coap_ip_addr = settings.COAP_ADDR
+                coap_port = settings.COAP_PORT
                 multicast = settings.COAP_MULTICAST
 
-                if utils.validate_IPv4(ip_addr):
-                    data["address"] = ip_addr
-                    data["port"] = port
+                proxy_ip_addr = settings.PROXY_ADDR
+                proxy_port = settings.PROXY_PORT
+
+                if utils.validate_IPv4(coap_ip_addr):
+                    data["coap_address"] = coap_ip_addr
+                    data["coap_port"] = coap_port
                     data["multicast"] = multicast
+                else:
+                    print "Invalid CoAP Server IP address"
+                
+                if utils.validate_IPv4(proxy_ip_addr):
+                    data["proxy_address"] = proxy_ip_addr
+                    data["proxy_port"] = proxy_port
                     ip_ok = True
                 else:
-                    print "Invalid IP address"
+                    print "Invalid Proxy IP address"
 
 
             while not name_ok:
@@ -229,6 +237,7 @@ def register_from_scratch():
                 cred_ok = True
 
             try:
+                print json.dumps(data)
                 resp = client.post(base_url+"api/servers/", data=json.dumps(data),\
                                     auth=(email, password))
             except:
@@ -242,7 +251,7 @@ def register_from_scratch():
                     js = json.loads(resp.text)
 
                     for serv in js["servers"]:
-                        if serv["address"] == ip_addr:
+                        if serv["coap_address"] == coap_ip_addr:
                             confs = serv
                             break
 
@@ -253,7 +262,10 @@ def register_from_scratch():
 
                     settings.HOME_SERVER_ID = confs["id"]
                     settings.HOME_SERVER_NAME = confs["name"]
-                    settings.HOME_SERVER_ADDRESS = confs["address"]
+                    settings.HOME_SERVER_COAP_ADDRESS = confs["coap_address"]
+                    settings.HOME_SERVER_COAP_PORT = confs["coap_port"]
+                    settings.HOME_SERVER_PROXY_ADDRESS = confs["proxy_address"]
+                    settings.HOME_SERVER_PROXY_PORT = confs["proxy_port"]
                     settings.USER_PASSWORD = confs["password"]
                     settings.USER_EMAIL = confs["email"]
 
@@ -263,19 +275,21 @@ def register_from_scratch():
                     sys.exit()
             else:
                 js = json.loads(resp.text)
-                if "address" in js.keys():
-                    print "ERROR ("+ str(resp.status_code)+"): "+str(js["address"][0])
+                if "coap_address" in js.keys():
+                    print "ERROR ("+ str(resp.status_code)+"): "+str(js["coap_address"][0])
                     ip_ok = False
                     sys.exit(1)
-
-                if "name" in js.keys():
+                elif "name" in js.keys():
                     print "ERROR ("+ str(resp.status_code)+"): "+str(js["name"][0])
                     name_ok = False
 
-                if "detail" in js.keys():
+                elif "detail" in js.keys():
                     print "ERROR ("+ str(resp.status_code)+"): "+str(js["detail"][0])
                     email_ok = False
                     cred_ok = False
+                
+                else:
+                    print "ERROR ("+ str(resp.status_code)+"): "+str(resp.text)
 
     return True
 

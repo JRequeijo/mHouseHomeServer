@@ -7,6 +7,7 @@
 import json
 import logging
 import requests
+import time 
 
 import settings
 from utils import AppError
@@ -14,6 +15,41 @@ from utils import AppError
 __author__ = "Jose Requeijo Dias"
 
 logger = logging.getLogger(__name__)
+
+def sendServerAliveSignaltoCloud(server):
+    while not server.stopped.isSet():
+        time.sleep(10)
+        print "Send Server Alive to Cloud"
+        try:
+            email = settings.USER_EMAIL
+            password = settings.USER_PASSWORD
+            server_id = settings.HOME_SERVER_ID
+        except:
+            logger.error("Settings file not properly configured. Probably Home Server registration improperly done.")
+            return False
+
+        client = requests.Session()
+        try:
+            resp = client.head(settings.CLOUD_BASE_URL+"login/")
+            csrftoken = resp.cookies["csrftoken"]
+
+            client.headers.update({"Accept":"application/json",\
+                    "Content-Type":"application/json",\
+                    "X-CSRFToken":csrftoken})
+            client.auth = (email, password)
+
+            try:
+                resp = client.patch(settings.CLOUD_BASE_URL+"api/servers/"\
+                                    +str(server_id)\
+                                    +"/state/?fromserver=true", data=json.dumps({"status":"running"}))
+                if resp.status_code == 200:
+                    print "ALIVE SENT"
+            except:
+                raise AppError(503)
+        except AppError:
+            logger.error("You do not have connection to the internet or the cloud server is down")
+        except Exception as err:
+            print "ERROR: ", err
 
 ### REVER ISTO MUITO BEM
 def regist_device_on_cloud(device):

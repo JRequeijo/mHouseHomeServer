@@ -17,6 +17,7 @@ from server.services import HomeServerServices
 from server.serverconfigs import HomeServerConfigs
 
 import settings
+import mhouse_cloudcomm
 
 __author__ = "Jose Requeijo Dias"
 
@@ -52,7 +53,7 @@ class CoAPServer(CoAP):
 
         logger.info("CoAP Server start on " + self.coapaddress + ":" + str(self.coapport))
         logger.info(self.root.dump())
-
+    
     #
     ### This method is an override to the original CoAPthon receive_request method
     ### in order to allow the notification of the devices seperately
@@ -239,6 +240,10 @@ class CoAPServer(CoAP):
 
             mon_t = threading.Thread(target=self.devices.monitoring_devices)
             mon_t.start()
+            
+            sendServerAlive_t = threading.Thread(target=mhouse_cloudcomm.sendServerAliveSignaltoCloud,
+                                                    args=(self,))
+            sendServerAlive_t.start()
 
             self.listen(10)
         except KeyboardInterrupt:

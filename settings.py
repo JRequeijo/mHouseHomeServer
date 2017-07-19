@@ -64,5 +64,5 @@ has connection with the cloud service specified by the URL. If it is set to True
 the HomeServer works without internet connection but the devices are only
 reachable from the HomeServer"s REST API
 """
-CLOUD_BASE_URL = "http://mhouseframework.eu-west-1.elasticbeanstalk.com/"
+CLOUD_BASE_URL = "http://127.0.0.1:8000/" #"http://mhouseframework.eu-west-1.elasticbeanstalk.com/"
 ALLOW_WORKING_OFFLINE = False

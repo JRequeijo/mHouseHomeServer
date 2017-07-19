@@ -23,7 +23,7 @@ import settings
 from utils import *
 from proxy.communicator import Communicator
 
-from cloudcomm import regist_device_on_cloud, unregist_device_from_cloud, notify_cloud
+import cloudcomm
 
 __author__ = "Jose Requeijo Dias"
 
@@ -230,7 +230,7 @@ class Device(Resource):
             self.services.delete()
 
             if not settings.WORKING_OFFLINE:
-                thread.start_new_thread(unregist_device_from_cloud, (self.universal_id,))
+                cloudcomm.unregister_device_from_cloud_platforms(self)
 
             return True, response
         else:
@@ -444,7 +444,7 @@ class DevicesList(Resource):
                 dev = self.add_device(body, address, port)
 
                 if not settings.WORKING_OFFLINE:
-                    thread.start_new_thread(regist_device_on_cloud, (dev,))
+                    cloudcomm.register_device_on_cloud_platforms(dev)
 
                 self.payload = self.get_created_device(dev)
                 return status(self, response, defines.Codes.CREATED)
@@ -715,7 +715,7 @@ class DeviceState(Resource):
 
                 if not settings.WORKING_OFFLINE:
                     if self.device.address == str(origin[0]):
-                        thread.start_new_thread(notify_cloud, (self,))
+                        cloudcomm.notify_cloud_platforms(self.device)
 
                 self.payload = self.get_payload()
                 return status(self, response, defines.Codes.CHANGED)

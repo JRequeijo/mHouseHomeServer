@@ -23,7 +23,7 @@ import settings
 from utils import *
 from proxy.communicator import Communicator
 
-import cloudcomm
+import cloudcommunicators.cloudcomm as cloudcomm
 
 __author__ = "Jose Requeijo Dias"
 
@@ -205,7 +205,7 @@ class Device(Resource):
 
                 if self.address == str(request.source[0]):
                     self.update_all_info(body)
-                    regist_device_on_cloud(self)
+                    cloudcomm.regist_device_on_cloud(self)
 
                 self.payload = self.get_payload()
                 return status(self, response, defines.Codes.CHANGED)

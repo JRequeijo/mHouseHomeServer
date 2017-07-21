@@ -43,7 +43,6 @@ def log_to_logger(fn):
 
 proxy = Bottle()
 proxy.install(log_to_logger)
-# backup = BackupSaver("housebackup.json", house)
 
 comm = Communicator(settings.COAP_ADDR, settings.COAP_PORT)
 
@@ -225,7 +224,7 @@ def update_server_configurations():
                 if c_type in ["SCALAR_TYPES", "ENUM_TYPES", "PROPERTY_TYPES", "DEVICE_TYPES"]:
                     data[c_type] = body[c_type]
                 else:
-                    abort(400, "Request query must be one of SCALAR_TYPES, ENUM_TYPES, PROPERTY_TYPES or DEVICE_TYPES")
+                    AppError(400, "Request query must be one of SCALAR_TYPES, ENUM_TYPES, PROPERTY_TYPES or DEVICE_TYPES")
 
                 resp = comm.put("/configs?type="+str(c_type), json.dumps(data),\
                                                         timeout=settings.COMM_TIMEOUT)

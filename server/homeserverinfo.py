@@ -45,7 +45,7 @@ class HomeServerInfo(Resource):
         return {"server_id": self.server.id, "name": self.server.name,\
                  "coap_address": self.server.coapaddress, "coap_port": self.server.coapport,\
                  "multicast": self.server.multicast, "proxy_address": self.server.proxyaddress,\
-                 "proxy_port": self.server.proxyport}
+                 "proxy_port": self.server.proxyport, "timeout":self.server.timeout}
 
     def get_json(self):
         """

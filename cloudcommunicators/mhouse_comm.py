@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def sendServerAliveSignaltoCloud(server):
     while not server.stopped.isSet():
-        time.sleep(10)
+        time.sleep(settings.HOME_SERVER_TIMEOUT-2)
         print "Send Server Alive to Cloud"
         try:
             email = settings.USER_EMAIL

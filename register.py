@@ -104,6 +104,7 @@ def register_from_file():
             data["coap_port"] = settings.HOME_SERVER_COAP_PORT
             data["proxy_address"] = settings.HOME_SERVER_PROXY_ADDRESS
             data["proxy_port"] = settings.HOME_SERVER_PROXY_PORT
+            data["timeout"] = settings.HOME_SERVER_TIMEOUT
 
             resp = client.patch(base_url+"api/servers/"+str(server_id)+"/?fromserver=true",\
                                 data=json.dumps(data))
@@ -128,6 +129,7 @@ def register_from_file():
             data["proxy_address"] = settings.HOME_SERVER_PROXY_ADDRESS
             data["proxy_port"] = settings.HOME_SERVER_PROXY_PORT
             data["multicast"] = settings.COAP_MULTICAST
+            data["timeout"] = settings.HOME_SERVER_TIMEOUT
 
             try:
                 resp = client.post(base_url+"api/servers/", data=json.dumps(data))
@@ -237,7 +239,7 @@ def register_from_scratch():
                 cred_ok = True
 
             try:
-                print json.dumps(data)
+                data["timeout"] = settings.HOME_SERVER_TIMEOUT
                 resp = client.post(base_url+"api/servers/", data=json.dumps(data),\
                                     auth=(email, password))
             except:

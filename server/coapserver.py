@@ -17,7 +17,7 @@ from server.services import HomeServerServices
 from server.serverconfigs import HomeServerConfigs
 
 import settings
-import mhouse_cloudcomm
+import cloudcommunicators.mhouse_comm as cloud_comm
 
 __author__ = "Jose Requeijo Dias"
 
@@ -40,6 +40,8 @@ class CoAPServer(CoAP):
 
         self.proxyaddress = settings.PROXY_ADDR
         self.proxyport = settings.PROXY_PORT
+
+        self.timeout = settings.HOME_SERVER_TIMEOUT
 
         logger.info("Starting CoAP Server...")
         CoAP.__init__(self, (self.coapaddress, self.coapport), self.multicast)
@@ -241,7 +243,7 @@ class CoAPServer(CoAP):
             mon_t = threading.Thread(target=self.devices.monitoring_devices)
             mon_t.start()
             
-            sendServerAlive_t = threading.Thread(target=mhouse_cloudcomm.sendServerAliveSignaltoCloud,
+            sendServerAlive_t = threading.Thread(target=cloud_comm.sendServerAliveSignaltoCloud,
                                                     args=(self,))
             sendServerAlive_t.start()
 

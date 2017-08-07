@@ -205,7 +205,7 @@ class Device(Resource):
 
                 if self.address == str(request.source[0]):
                     self.update_all_info(body)
-                    cloudcomm.regist_device_on_cloud(self)
+                    cloudcomm.register_device_on_cloud_platforms(self)
 
                 self.payload = self.get_payload()
                 return status(self, response, defines.Codes.CHANGED)

@@ -1,6 +1,18 @@
 import boto3
 import json
+import threading
+import time
+import sys
+import os
+from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 
+my_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(my_dir+"/../")
+sys.path.append(my_dir+"/../server/")
+
+import settings
+from utils import AppError
+from proxy.communicator import Communicator
 
 class AWSCommunicator(object):
 
@@ -15,6 +27,9 @@ class AWSCommunicator(object):
         else:
             self.client = boto3.client("iot")
             self.dataclient = boto3.client("iot-data")
+        
+        self.listener_thread = threading.Thread(target=self.run_cloud_shadow_listener)
+        self.listener_thread.start()
 
     def register_new_device(self, device_name, state):
         try:
@@ -51,3 +66,45 @@ class AWSCommunicator(object):
             print "Device State Successfully Updated on AWS"
         except Exception as err:
             print "ERROR: ", err
+
+    def run_cloud_shadow_listener(self):
+        comm = Communicator(settings.COAP_ADDR, settings.COAP_PORT)
+        last_states = {}
+        while 1:
+            try:
+                resp = comm.get("/devices", timeout=settings.COMM_TIMEOUT)
+            except AppError as err:
+                abort(err.code, err.msg)
+            except:
+                abort(500, "Unknown Proxy fatal error")
+
+            resp = comm.get_response(resp)
+            devs = json.loads(resp.payload)
+            
+            for dev in devs["devices"]:
+                # print "\n******Listening****\n"
+                response = self.dataclient.get_thing_shadow(thingName=dev["name"]+"-"+str(dev["local_id"]))
+                state = json.loads(response["payload"].read())["state"]
+                # print "REP: ",state["reported"]
+                # print "DES: ",state["desired"]
+                try:
+                    if last_states[dev["local_id"]] != state["desired"]:
+                        print "\n\nUpdate From AWS cloud" 
+                        # print state  
+                        try:
+                            resp = comm.put("/devices/"+str(dev["local_id"])+"/state",\
+                                            json.dumps(state["desired"]), timeout=settings.COMM_TIMEOUT)
+                        except AppError as err:
+                            abort(err.code, err.msg)
+                        except:
+                            abort(500, "Unknown Proxy fatal error")
+                        # print "--------------------\n\n"
+                except:
+                    print "\n\nState From AWS cloud" 
+                    print state
+                    print "--------------------\n\n"
+
+                last_states[dev["local_id"]] = state["reported"]
+                # print "LAST: ",last_states[dev["local_id"]]
+            
+            time.sleep(5)

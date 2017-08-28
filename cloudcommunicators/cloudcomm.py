@@ -4,9 +4,9 @@ import sys
 
 import settings
 import mhouse_comm
-from aws_comm import AWSCommunicator
 
 if settings.AWS_INTEGRATION:
+    from aws_comm import AWSCommunicator
     try:
         credentials=(settings.AWS_ACCESS_KEY_ID, settings.AWS_SECRET_ACCESS_KEY)
         aws_communicator = AWSCommunicator(credentials)

@@ -53,6 +53,7 @@ COAP_PORT = 5683
 COAP_MULTICAST = False
 
 HOME_SERVER_TIMEOUT = 40
+HOME_SERVER_TIMEOUT_GUARD = 10
 
 """
 Specification of the default timeouts for the requests between the proxy and the

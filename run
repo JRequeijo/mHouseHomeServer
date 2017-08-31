@@ -1,3 +1,4 @@
 #!/bin/sh
 echo Starting Home Server
 exec python ./main_threads.py
+echo \n

@@ -14,12 +14,12 @@ from utils import AppError
 
 __author__ = "Jose Requeijo Dias"
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("cloud_comm_log")
 
 def sendServerAliveSignaltoCloud(server):
     while not server.stopped.isSet():
         time.sleep(settings.HOME_SERVER_TIMEOUT-2)
-        print "Send Server Alive to Cloud"
+        logger.info("Send Server Alive to Cloud")
         try:
             email = settings.USER_EMAIL
             password = settings.USER_PASSWORD
@@ -43,13 +43,13 @@ def sendServerAliveSignaltoCloud(server):
                                     +str(server_id)\
                                     +"/state/?fromserver=true", data=json.dumps({"status":"running"}))
                 if resp.status_code == 200:
-                    print "ALIVE SENT"
+                    logger.info("ALIVE SENT")
             except:
                 raise AppError(503)
         except AppError:
             logger.error("You do not have connection to the internet or the cloud server is down")
         except Exception as err:
-            print "ERROR: ", err
+            logger.error("ERROR: "+str(err))
 
 ### REVER ISTO MUITO BEM
 def regist_device_on_cloud(device):
@@ -159,7 +159,7 @@ def notify_cloud(device_state):
         devices or Home Server states/informations.
     """
 
-    print "Notifying Cloud"
+    logger.info("Notifying Cloud")
     try:
         email = settings.USER_EMAIL
         password = settings.USER_PASSWORD
@@ -183,7 +183,7 @@ def notify_cloud(device_state):
                                 +str(device_state.device.universal_id)\
                                 +"/state/?fromserver=true", data=json.dumps({"current_state":device_state.state}))
             if resp.status_code == 200:
-                print "STATE CHANGED"
+                logger.info("STATE CHANGED")
         except:
             raise AppError(503)
     except AppError:

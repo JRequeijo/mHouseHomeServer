@@ -16,6 +16,7 @@ import settings
 
 __author__ = "Jose Requeijo Dias"
 
+logging.config.fileConfig(settings.LOGGING_CONFIG_FILE, disable_existing_loggers=False)
 logger = logging.getLogger("proxylog")
 
 def register():

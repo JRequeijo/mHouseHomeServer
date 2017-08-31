@@ -1,8 +1,8 @@
-2017-04-05 23:45:58,457 - MainThread - proxylog - INFO - Server Info Retrieved Successfully
-2017-04-05 23:45:58,476 - MainThread - proxylog - INFO - Getting core configs (device_types)
-2017-04-05 23:45:58,476 - MainThread - proxylog - INFO - Getting core configs (value_types)
-2017-04-05 23:45:58,477 - MainThread - proxylog - INFO - Getting core configs (property_types)
-2017-04-05 23:46:12,200 - MainThread - proxylog - INFO - 192.168.1.67 GET http://192.168.1.67:8080/info 200 OK
-2017-04-05 23:49:18,421 - MainThread - proxylog - INFO - 192.168.1.67 GET http://192.168.1.67:8080/devices 200 OK
-2017-04-05 23:49:25,821 - MainThread - proxylog - INFO - 192.168.1.67 POST http://192.168.1.67:8080/devices 201 Created
-2017-04-05 23:50:52,859 - MainThread - proxylog - INFO - 192.168.1.67 GET http://192.168.1.67:8080/devices 200 OK
+2017-08-31 02:09:00,538 - MainThread - proxylog - INFO - Server Info Retrieved Successfully
+2017-08-31 02:09:00,740 - MainThread - proxylog - INFO - Getting configurations: (device_types)
+2017-08-31 02:09:00,740 - MainThread - proxylog - INFO - Getting configurations: (value_types)
+2017-08-31 02:09:00,741 - MainThread - proxylog - INFO - Getting configurations: (property_types)
+2017-08-31 02:09:00,926 - MainThread - proxylog - INFO - Getting Services
+2017-08-31 02:09:00,928 - MainThread - proxylog - INFO - Starting Proxy...
+2017-08-31 02:09:12,069 - MainThread - proxylog - INFO - Shutting down proxy
+2017-08-31 02:09:12,069 - MainThread - proxylog - INFO - Proxy is down

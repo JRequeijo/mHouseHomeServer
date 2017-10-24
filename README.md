@@ -3,7 +3,7 @@ This is the mHouse Framework Home Server component repository.
 
 <a href="https://github.com/JRequeijo/mHouseFramework/tree/master/docs/Home%20Server">Home Server Official Documentation</a>
 
-<img src="https://github.com/JRequeijo/mHouseFramework/blob/master/docs/Home%20Server/Home_server_arch.png" alt="Home Server Architecture">
+              <img src="https://github.com/JRequeijo/mHouseFramework/blob/master/docs/Home%20Server/Home_server_arch.png" alt="Home Server Architecture">
 
 <p>
 The Home Server component prototype is a system composed of several python applications that run on the same machine, interacting with each other, and that can be seen as only one system/”black box”, called Home Server. The main subcomponents of the Home Server are: the Proxy, the Cloud Communicators and the CoAP Server (see Figure 25).

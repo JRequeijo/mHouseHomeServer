@@ -3,7 +3,7 @@ from multiprocessing import Process
 
 import proxy.proxy_main as proxy
 import server.server_main as server
-from register import register
+from cloudcommunicators.register import register
 
 if not register():
     sys.exit(4)

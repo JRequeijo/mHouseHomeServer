@@ -136,14 +136,14 @@ def get_my_ip(public=False):
             print "ERROR: Unable to connect to Network"
             raise AppError(500, "Unable to connect to Network")
     else:
-        # try:
-        resp = requests.get("https://jsonip.com/")
-        myip = json.loads(resp.text)
-        myip = myip["ip"]
-        return myip
-        # except:
-        #         print "ERROR: Unable to connect to Network"
-        #         raise AppError(500, "Unable to connect to Network")
+        try:
+            resp = requests.get("https://jsonip.com/")
+            myip = json.loads(resp.text)
+            myip = myip["ip"]
+            return myip
+        except:
+            print "ERROR: Unable to connect to Network"
+            raise AppError(500, "Unable to connect to Network")
 
 def check_on_body(body, keys):
     """

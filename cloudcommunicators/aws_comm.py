@@ -34,13 +34,11 @@ class AWSCommunicator(object):
     def register_new_device(self, device_name, state):
         try:
             resp = self.client.create_thing(thingName=device_name)
-            # print resp
 
             data = {"state":{"desired":state.get_simplified_wanted_state(),
                              "reported":state.get_simplified_current_state()}}
             resp = self.dataclient.update_thing_shadow(thingName=device_name,\
                                                         payload=json.dumps(data))
-            # print resp
 
             print "Device Successfully Registered on AWS"
         except Exception as err:
@@ -49,7 +47,6 @@ class AWSCommunicator(object):
     def unregister_device(self, device_name):
         try:
             resp = self.client.create_thing(thingName=device_name)
-            # print resp
 
             print "Device Successfully Unregistered from AWS"
         except Exception as err:
@@ -61,7 +58,6 @@ class AWSCommunicator(object):
                              "reported":state.get_simplified_current_state()}}
             resp = self.dataclient.update_thing_shadow(thingName=device_name,\
                                                         payload=json.dumps(data))
-            # print resp
 
             print "Device State Successfully Updated on AWS"
         except Exception as err:
@@ -82,15 +78,11 @@ class AWSCommunicator(object):
             devs = json.loads(resp.payload)
             
             for dev in devs["devices"]:
-                # print "\n******Listening****\n"
                 response = self.dataclient.get_thing_shadow(thingName=dev["name"]+"-"+str(dev["local_id"]))
                 state = json.loads(response["payload"].read())["state"]
-                # print "REP: ",state["reported"]
-                # print "DES: ",state["desired"]
                 try:
                     if last_states[dev["local_id"]] != state["desired"]:
                         print "\n\nUpdate From AWS cloud" 
-                        # print state  
                         try:
                             resp = comm.put("/devices/"+str(dev["local_id"])+"/state",\
                                             json.dumps(state["desired"]), timeout=settings.COMM_TIMEOUT)
@@ -98,13 +90,11 @@ class AWSCommunicator(object):
                             abort(err.code, err.msg)
                         except:
                             abort(500, "Unknown Proxy fatal error")
-                        # print "--------------------\n\n"
                 except:
                     print "\n\nState From AWS cloud" 
                     print state
                     print "--------------------\n\n"
 
                 last_states[dev["local_id"]] = state["reported"]
-                # print "LAST: ",last_states[dev["local_id"]]
             
             time.sleep(5)

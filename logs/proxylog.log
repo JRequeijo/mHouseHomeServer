@@ -1,8 +1,0 @@
-2017-08-31 02:09:00,538 - MainThread - proxylog - INFO - Server Info Retrieved Successfully
-2017-08-31 02:09:00,740 - MainThread - proxylog - INFO - Getting configurations: (device_types)
-2017-08-31 02:09:00,740 - MainThread - proxylog - INFO - Getting configurations: (value_types)
-2017-08-31 02:09:00,741 - MainThread - proxylog - INFO - Getting configurations: (property_types)
-2017-08-31 02:09:00,926 - MainThread - proxylog - INFO - Getting Services
-2017-08-31 02:09:00,928 - MainThread - proxylog - INFO - Starting Proxy...
-2017-08-31 02:09:12,069 - MainThread - proxylog - INFO - Shutting down proxy
-2017-08-31 02:09:12,069 - MainThread - proxylog - INFO - Proxy is down

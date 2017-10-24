@@ -1,1 +1,1 @@
-# tese_homeserver
+This is the mHouse Framework Home Server component repository.

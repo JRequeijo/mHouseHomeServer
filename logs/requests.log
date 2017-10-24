@@ -1,7 +1,0 @@
-2017-08-31 02:09:00,178 - MainThread - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): mhouseframework.eu-west-1.elasticbeanstalk.com
-2017-08-31 02:09:00,381 - MainThread - requests.packages.urllib3.connectionpool - DEBUG - "HEAD /login/ HTTP/1.1" 200 0
-2017-08-31 02:09:00,529 - MainThread - requests.packages.urllib3.connectionpool - DEBUG - "PATCH /api/servers/5/?fromserver=true HTTP/1.1" 200 183
-2017-08-31 02:09:00,541 - MainThread - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): mhouseframework.eu-west-1.elasticbeanstalk.com
-2017-08-31 02:09:00,739 - MainThread - requests.packages.urllib3.connectionpool - DEBUG - "GET /api/configs/ HTTP/1.1" 200 1571
-2017-08-31 02:09:00,744 - MainThread - requests.packages.urllib3.connectionpool - INFO - Starting new HTTP connection (1): mhouseframework.eu-west-1.elasticbeanstalk.com
-2017-08-31 02:09:00,925 - MainThread - requests.packages.urllib3.connectionpool - DEBUG - "GET /api/services/ HTTP/1.1" 200 15

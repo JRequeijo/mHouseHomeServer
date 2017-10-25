@@ -28,6 +28,12 @@ For more detailed information check the <a href="https://github.com/JRequeijo/mH
     <a href="https://github.com/JRequeijo/mHouseFramework">mHouse Framework Official Repository</a>
   </li>
   <li>
+    <a href="https://github.com/JRequeijo/mHouseFramework/tree/master/docs/Cloud%20Platform">Cloud Platform Official Documentation</a>
+  </li>
+  <li>
     <a href="https://github.com/JRequeijo/mHouseFramework/tree/master/docs/Home%20Server">Home Server Official Documentation</a>
+  </li>
+  <li>
+    <a href="https://github.com/JRequeijo/mHouseFramework/tree/master/docs/Endpoints">Endpoints Network Official Documentation</a>
   </li>
 </ul>

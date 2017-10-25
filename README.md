@@ -1,8 +1,7 @@
 # mHouse Home Server Component 
 This is the mHouse Framework Home Server component repository.
 
-<a href="https://github.com/JRequeijo/mHouseFramework/tree/master/docs/Home%20Server">Home Server Official Documentation</a>
-
+# General Description
 <img src="https://github.com/JRequeijo/mHouseFramework/blob/master/docs/Home%20Server/Home_server_arch.png" alt="Home Server Architecture">
 
 <p>
@@ -18,3 +17,17 @@ The “Cloud Communicators” subcomponent is an easily expandable subcomponent,
 <p>
 The last and main subcomponent of the Home Server is the “CoAP Server”, which can receive and handle all CoAP requests. It is composed by two main modules: the database, where all the Home Server information, configuration and resources are stored, and the Devices monitoring module, which is used to monitor every Endpoint/device connected to the Home Server. The “CoAP Server” exposes a CoAP interface that can be used by the ”Proxy” subcomponent and also by all Endpoints connected to it through the Endpoints network. It is the main subcomponent of the Home Server because it is were all the “action” occurs, i.e. it is where all the relevant Home Server information and resources are stored, and where all the Home Server’s logic is implemented. Thus the ”CoAP Server” can be seen as “the heart and brain” of the Home Server system, as the other subcomponents are somehow only “redirection”/gateway points, which allow the Home Server to interact with the remaining components of the mHouse Framework system.
 </p>
+
+<p>
+For more detailed information check the <a href="https://github.com/JRequeijo/mHouseFramework/tree/master/docs/Home%20Server">Home Server Official Documentation</a>.
+</p>
+
+# Relevant links
+<ul>
+  <li>
+    <a href="https://github.com/JRequeijo/mHouseFramework">mHouse Framework Official Repository</a>
+  </li>
+  <li>
+    <a href="https://github.com/JRequeijo/mHouseFramework/tree/master/docs/Home%20Server">Home Server Official Documentation</a>
+  </li>
+</ul>

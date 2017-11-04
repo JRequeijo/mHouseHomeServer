@@ -1,0 +1,1 @@
+{"name": "ServerTest2", "coap_address": "192.168.1.67", "device_count": 1, "email": "josediogo_rd@hotmail.com", "proxy_port": 8080, "multicast": false, "proxy_address": "94.61.18.170", "timeout": 40, "active": true, "coap_port": 5683, "password": "Petrucci1", "id": 2}

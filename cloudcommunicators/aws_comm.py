@@ -40,17 +40,19 @@ class AWSCommunicator(object):
             resp = self.dataclient.update_thing_shadow(thingName=device_name,\
                                                         payload=json.dumps(data))
 
-            print "Device Successfully Registered on AWS"
+            logger.info("Device Successfully Registered on AWS")
         except Exception as err:
-            print "ERROR: ", err
+            msg = "ERROR: "+str(err)
+            logger.error(msg)
     
     def unregister_device(self, device_name):
         try:
             resp = self.client.create_thing(thingName=device_name)
 
-            print "Device Successfully Unregistered from AWS"
+            logger.info("Device Successfully Unregistered from AWS")
         except Exception as err:
-            print "ERROR: ", err
+            msg = "ERROR: "+str(err)
+            logger.error(msg)
     
     def notify_shadow(self, device_name, state):
         try:
@@ -59,9 +61,10 @@ class AWSCommunicator(object):
             resp = self.dataclient.update_thing_shadow(thingName=device_name,\
                                                         payload=json.dumps(data))
 
-            print "Device State Successfully Updated on AWS"
+            logger.info("Device State Successfully Updated on AWS")
         except Exception as err:
-            print "ERROR: ", err
+            msg = "ERROR: "+str(err)
+            logger.error(msg)
 
     def run_cloud_shadow_listener(self):
         comm = Communicator(settings.COAP_ADDR, settings.COAP_PORT)
@@ -82,7 +85,7 @@ class AWSCommunicator(object):
                 state = json.loads(response["payload"].read())["state"]
                 try:
                     if last_states[dev["local_id"]] != state["desired"]:
-                        print "\n\nUpdate From AWS cloud" 
+                        logger.info("Update From AWS cloud") 
                         try:
                             resp = comm.put("/devices/"+str(dev["local_id"])+"/state",\
                                             json.dumps(state["desired"]), timeout=settings.COMM_TIMEOUT)
@@ -91,9 +94,9 @@ class AWSCommunicator(object):
                         except:
                             abort(500, "Unknown Proxy fatal error")
                 except:
-                    print "\n\nState From AWS cloud" 
-                    print state
-                    print "--------------------\n\n"
+                    logger.info("State From AWS cloud") 
+                    logger.info(str(state))
+                    # print "--------------------\n\n"
 
                 last_states[dev["local_id"]] = state["reported"]
             

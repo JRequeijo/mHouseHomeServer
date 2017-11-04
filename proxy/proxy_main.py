@@ -379,27 +379,8 @@ def change_device_state(device_id):
             if err_check is not None:
                 abort(err_check[0], err_check[1])
 
-            try:
-                resp_json = json.loads(resp.payload)
-                tryout = 0
-                resp_get = None
-                while resp_json["wanted_state"] != resp_json["current_state"] and (tryout < 3):
-                    resp_get = get_device_state(device_id)
-                    resp_json = json.loads(resp_get)
-                    tryout += 1
-
-                if resp_json["wanted_state"] == resp_json["current_state"]:
-                    if not resp_get:
-                        resp_get = get_device_state(device_id)
-                    return resp_get
-                else:
-                    print "DEVICE IS NOT RESPONDING"
-                    raise AppError(502, "The device is not responding")
-            except AppError as err:
-                abort(err.code, err.msg)
-            except:
-                abort(500, "Unknown Proxy fatal error")
-
+            #print resp
+            return send_response(resp.payload, resp.code)
         else:
             abort(400, "Request body formated in json is missing")
     else:
@@ -463,7 +444,7 @@ def update_services_on_device(device_id):
             abort(400, "Request body not properly json formated")
 
         if body is not None:
-            print body
+            #print body
             if isinstance(body, list):
                 try:
                     data = []

@@ -315,7 +315,7 @@ def get_configs():
             resp = client.get(core_configs_url)
             js = json.loads(resp.text)
         except:
-            print "ERROR: You do not have connection to the internet or the cloud server is down"
+            logger.error("ERROR: You do not have connection to the internet or the cloud server is down")
             return False
 
         try:

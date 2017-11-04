@@ -407,7 +407,7 @@ class DevicesList(Resource):
                     d.delete()
                     logger.debug("Device ("+str(d.id)+") Deleted")
             except Exception as e:
-                print e.message
+                logger.error(e.message)
 
         sys.exit(0)
 
@@ -555,9 +555,6 @@ class DeviceState(Resource):
             dictionary with a simplified representation of the new state, i.e.
             {"property1_name":"property1_value",..., "propertyN_name":"propertyN_value"},
             and where at least one of the Device's properties must be present.
-            The second argument (origin) must be the IP address from where the update
-            is being requested, in order to secure that only the device itself can update
-            RO properties.
         """
         properties = self.device.device_type.type.properties
 
@@ -611,9 +608,6 @@ class DeviceState(Resource):
             dictionary with a simplified representation of the new state, i.e.
             {"property1_name":"property1_value",..., "propertyN_name":"propertyN_value"},
             and where at least one of the Device's properties must be present.
-            The second argument (origin) must be the IP address from where the update
-            is being requested, in order to secure that only the device itself can update
-            RO properties.
         """
         properties = self.device.device_type.type.properties
 
@@ -723,7 +717,7 @@ class DeviceState(Resource):
             except AppError as err:
                 return error(self, response, err.code, err.msg)
             except:
-                print "FATAL UNKNOWN ERROR"
+                logger.error("FATAL UNKNOWN ERROR")
                 return defines.Codes.INTERNAL_SERVER_ERROR
         else:
             return error(self, response, defines.Codes.UNSUPPORTED_CONTENT_FORMAT,\

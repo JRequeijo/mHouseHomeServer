@@ -51,7 +51,6 @@ def sendServerAliveSignaltoCloud(server):
         except Exception as err:
             logger.error("ERROR: "+str(err))
 
-### REVER ISTO MUITO BEM
 def regist_device_on_cloud(device):
     """
         This method tries to register a new device on the cloud server.
@@ -125,7 +124,6 @@ def regist_device_on_cloud(device):
     except AppError:
         logger.error("You do not have connection to the internet or the cloud server is down")
 
-### REVER ISTO MUITO BEM
 def unregist_device_from_cloud(device_id):
     """
         This method tries to unregister a new device on the cloud server.

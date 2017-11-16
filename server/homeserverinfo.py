@@ -74,7 +74,7 @@ class HomeServerInfo(Resource):
                                     "Could not satisfy the request Accept header")
           
         if request.content_type is defines.Content_types.get("application/json"):
-            if str(request.source[0]) == self.server.address:
+            if str(request.source[0]) == self.server.coapaddress:
                 try:
                     body = json.loads(request.payload)
                 except:
